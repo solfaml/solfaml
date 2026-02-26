@@ -3,6 +3,9 @@ name = "solfaml-parser"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
 winnow = "0.7.14"
