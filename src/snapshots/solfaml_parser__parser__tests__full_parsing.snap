@@ -427,7 +427,9 @@ expression: solfa.staffs
                 index: 3,
                 lyrics: [
                     LyricsTree {
-                        prefix: "1.",
+                        prefix: Some(
+                            "1.",
+                        ),
                         root: Join(
                             Chunk(
                                 Space(
@@ -474,7 +476,9 @@ expression: solfa.staffs
                         ),
                     },
                     LyricsTree {
-                        prefix: "2.",
+                        prefix: Some(
+                            "2.",
+                        ),
                         root: Join(
                             Chunk(
                                 Space(

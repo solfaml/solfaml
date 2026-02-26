@@ -171,7 +171,9 @@ Ok(
                         index: 3,
                         lyrics: [
                             LyricsTree {
-                                prefix: ">",
+                                prefix: Some(
+                                    ">",
+                                ),
                                 root: Join(
                                     Chunk(
                                         Space(
@@ -356,7 +358,9 @@ Ok(
                         index: 1,
                         lyrics: [
                             LyricsTree {
-                                prefix: ">",
+                                prefix: Some(
+                                    ">",
+                                ),
                                 root: Join(
                                     Chunk(
                                         Space(
@@ -386,7 +390,9 @@ Ok(
                         index: 3,
                         lyrics: [
                             LyricsTree {
-                                prefix: ">",
+                                prefix: Some(
+                                    ">",
+                                ),
                                 root: Join(
                                     Chunk(
                                         Space(

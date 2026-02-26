@@ -95,13 +95,13 @@ pub fn lyrics_parser(input: &mut &str) -> ModalResult<Vec<LyricsTree>> {
 }
 
 pub fn pos_parser(input: &mut &str) -> ModalResult<u16> {
-    seq!(_: "{", _: space0, digit1, _: space0, _: "}")
+    seq!(_: "[", _: space0, digit1, _: space0, _: "]")
         .try_map(|(pos,): (&str,)| pos.parse())
         .parse_next(input)
 }
 
 pub fn range_parser(input: &mut &str) -> ModalResult<(u16, u16)> {
-    seq!(_: "{", _: space0, digit1,_: ",", digit1, _: space0, _: "}")
+    seq!(_: "[", _: space0, digit1,_: ",", digit1, _: space0, _: "]")
         .try_map(|(start, end): (&str, &str)| {
             start.parse().and_then(|s| end.parse().map(|e| (s, e)))
         })
@@ -207,8 +207,12 @@ pub fn lyrics_measure_parser(input: &mut &str) -> ModalResult<LyricsMeasure> {
 pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
     seq! {
         LyricsTree {
-            prefix: take_while(1.., |ch: char| !" |".contains(ch))
-                .map(|s: &str| s.to_string()),
+            prefix: opt(
+                seq! (
+                    _: "#",
+                    take_while(1.., |ch: char| ch != ' ').map(|s: &str| s.to_string()),
+                ).map(|(p,)| p)
+            ),
             root: lyrics_measure_parser,
             _: opt(alt(("||", "|"))),
         }
@@ -357,7 +361,7 @@ description: Hello World!";
 
     #[test]
     fn test_dynamics_parsing() {
-        let source = "|: f{1} <{3,7} ^{8} mp{10} ||";
+        let source = "|: f[1] <[3,7] ^[8] mp[10] ||";
         let dynamics = dynamics_parser.parse(source).unwrap();
 
         insta::assert_debug_snapshot!(dynamics);
@@ -388,7 +392,7 @@ description: Hello World!";
 
     #[test]
     fn test_lyrics_parsing() {
-        let source = "1. do re_mi\\ | fasola ti$e <|> do % ||";
+        let source = "#1. do re_mi\\ | fasola ti$e <|> do % ||";
         let lyrics = lyrics_tree_parser.parse(source);
 
         insta::assert_debug_snapshot!(lyrics);
@@ -415,10 +419,10 @@ description: Hello World!";
 ---
 | d : r ||
 | d : r ||
-> do re
+#> do re
 | d : r ||
 | d : r ||
-> doo ree
+#> doo ree
 ";
 
         let result = solfa_parser.parse(source);
@@ -435,17 +439,17 @@ description: Hello World!";
 | d : r | m : f ||
 | d : r | m : f ||
 
-> do re | mi fa
+#> do re | mi fa
 
 | s : l | t : d' ||
 | s : l | t : d' ||
 
-> so la | ti do
+#> so la | ti do
 
 | s : l | t : - ||
 | s : l | t : - ||
 
-> so la | ti
+#> so la | ti
 ";
 
         let result = solfa_parser.parse(source);
@@ -479,15 +483,15 @@ description: Hello World!
 
 ---
 
-|: p{1}       <{4,7}             ^{8}   DC{9} ||
+|: p[1]       <[4,7]             ^[8]   DC[9] ||
 |---------------------------------------------||
 | d : r : m | f . s , l :  t   | _d'_ : ri+2  ||
 | d : r : m | f . s , l :  t   | _d'_ : ri+2  ||
 | d : r : m | f . s , l :  t   | _d'_ : ra-1  ||
 | d : r : m | f . s , l :  t   |  d,  : ra-1  ||
 
-1. do re_mi |   fasola   ti$e <|> do     re   ||
-2. do re_mi |   fasola   ti$e <|> do     %    ||
+#1. do re_mi |   fasola   ti$e <|> do     re   ||
+#2. do re_mi |   fasola   ti$e <|> do     %    ||
 ";
 
         let solfa = solfa_parser.parse(source).unwrap();

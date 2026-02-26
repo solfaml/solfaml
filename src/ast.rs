@@ -1,12 +1,18 @@
+use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[cfg(feature = "wasm")]
+use {tsify::Tsify, wasm_bindgen::prelude::*};
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Solfa {
     pub header: HashMap<String, String>,
     pub staffs: Vec<Staff>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum Dynamic {
     DC { pos: u16 },
     DS { pos: u16 },
@@ -17,7 +23,8 @@ pub enum Dynamic {
     Level { pos: u16, kind: DynamicLevel },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum DynamicLevel {
     FFF,
     FF,
@@ -29,7 +36,8 @@ pub enum DynamicLevel {
     PPP,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum BaseNote {
     D,
     R,
@@ -40,21 +48,25 @@ pub enum BaseNote {
     T,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum NoteVariant {
     Base,
     Raised,
     Lowered,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify))]
+#[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 pub enum Octave {
     Base,
     Up(u8),
     Down(u8),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Note {
     pub base: BaseNote,
     pub variant: NoteVariant,
@@ -73,14 +85,16 @@ impl Note {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum BeatDivisionKind {
     Normal,
     Half,
     Quarter,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct BeatDivision {
     pub lhs: Box<Measure>,
     pub rhs: Box<Measure>,
@@ -97,7 +111,8 @@ impl BeatDivision {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum Measure {
     EmptyNote,
     Note(Note),
@@ -108,7 +123,8 @@ pub enum Measure {
     RepeatEnd(Box<Measure>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Staff {
     pub dynamics: Vec<Dynamic>,
     pub measures: Vec<[Measure; 4]>,
@@ -141,7 +157,8 @@ impl From<StaffPartial> for Staff {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct StaffPartial {
     pub dynamics: Vec<Dynamic>,
     pub voice1: Vec<Measure>,
@@ -154,7 +171,8 @@ pub struct StaffPartial {
     pub lyrics4: Option<Vec<LyricsTree>>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum LyricsChunk {
     Placeholder,
     String(String),
@@ -164,20 +182,23 @@ pub enum LyricsChunk {
     Concat(Box<LyricsChunk>, Box<LyricsChunk>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub enum LyricsMeasure {
     Chunk(LyricsChunk),
     Join(Box<LyricsMeasure>, Box<LyricsMeasure>),
     Concat(Box<LyricsMeasure>, Box<LyricsMeasure>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct LyricsTree {
-    pub prefix: String,
+    pub prefix: Option<String>,
     pub root: LyricsMeasure,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct IndexedLyricsSet {
     pub index: u8,
     pub lyrics: Vec<LyricsTree>,

@@ -4,7 +4,9 @@ expression: lyrics
 ---
 Ok(
     LyricsTree {
-        prefix: "1.",
+        prefix: Some(
+            "1.",
+        ),
         root: Join(
             Chunk(
                 Space(
