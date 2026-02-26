@@ -194,7 +194,7 @@ pub enum LyricsMeasure {
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct LyricsTree {
     pub prefix: Option<String>,
-    pub root: LyricsMeasure,
+    pub root: LyricsChunk,
 }
 
 #[derive(Debug, PartialEq, Serialize)]

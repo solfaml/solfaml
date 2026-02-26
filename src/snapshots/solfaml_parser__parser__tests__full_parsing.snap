@@ -430,45 +430,39 @@ expression: solfa.staffs
                         prefix: Some(
                             "1.",
                         ),
-                        root: Join(
-                            Chunk(
-                                Space(
-                                    String(
-                                        "do",
-                                    ),
-                                    Concat(
-                                        String(
-                                            "re",
-                                        ),
-                                        String(
-                                            "mi",
-                                        ),
-                                    ),
-                                ),
+                        root: Space(
+                            String(
+                                "do",
                             ),
                             Concat(
-                                Chunk(
+                                String(
+                                    "re",
+                                ),
+                                Space(
+                                    String(
+                                        "mi",
+                                    ),
                                     Space(
                                         String(
                                             "fasola",
                                         ),
-                                        Split(
-                                            String(
-                                                "ti",
+                                        Space(
+                                            Split(
+                                                String(
+                                                    "ti",
+                                                ),
+                                                String(
+                                                    "e",
+                                                ),
                                             ),
-                                            String(
-                                                "e",
+                                            Space(
+                                                String(
+                                                    "do",
+                                                ),
+                                                String(
+                                                    "re",
+                                                ),
                                             ),
-                                        ),
-                                    ),
-                                ),
-                                Chunk(
-                                    Space(
-                                        String(
-                                            "do",
-                                        ),
-                                        String(
-                                            "re",
                                         ),
                                     ),
                                 ),
@@ -479,44 +473,38 @@ expression: solfa.staffs
                         prefix: Some(
                             "2.",
                         ),
-                        root: Join(
-                            Chunk(
-                                Space(
-                                    String(
-                                        "do",
-                                    ),
-                                    Concat(
-                                        String(
-                                            "re",
-                                        ),
-                                        String(
-                                            "mi",
-                                        ),
-                                    ),
-                                ),
+                        root: Space(
+                            String(
+                                "do",
                             ),
                             Concat(
-                                Chunk(
+                                String(
+                                    "re",
+                                ),
+                                Space(
+                                    String(
+                                        "mi",
+                                    ),
                                     Space(
                                         String(
                                             "fasola",
                                         ),
-                                        Split(
-                                            String(
-                                                "ti",
+                                        Space(
+                                            Split(
+                                                String(
+                                                    "ti",
+                                                ),
+                                                String(
+                                                    "e",
+                                                ),
                                             ),
-                                            String(
-                                                "e",
+                                            Space(
+                                                String(
+                                                    "do",
+                                                ),
+                                                Placeholder,
                                             ),
                                         ),
-                                    ),
-                                ),
-                                Chunk(
-                                    Space(
-                                        String(
-                                            "do",
-                                        ),
-                                        Placeholder,
                                     ),
                                 ),
                             ),

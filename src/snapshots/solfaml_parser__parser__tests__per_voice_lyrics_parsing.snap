@@ -96,14 +96,12 @@ Ok(
                                 prefix: Some(
                                     ">",
                                 ),
-                                root: Chunk(
-                                    Space(
-                                        String(
-                                            "do",
-                                        ),
-                                        String(
-                                            "re",
-                                        ),
+                                root: Space(
+                                    String(
+                                        "do",
+                                    ),
+                                    String(
+                                        "re",
                                     ),
                                 ),
                             },
@@ -116,14 +114,12 @@ Ok(
                                 prefix: Some(
                                     ">",
                                 ),
-                                root: Chunk(
-                                    Space(
-                                        String(
-                                            "doo",
-                                        ),
-                                        String(
-                                            "ree",
-                                        ),
+                                root: Space(
+                                    String(
+                                        "doo",
+                                    ),
+                                    String(
+                                        "ree",
                                     ),
                                 ),
                             },

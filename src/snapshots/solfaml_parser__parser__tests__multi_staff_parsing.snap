@@ -174,18 +174,14 @@ Ok(
                                 prefix: Some(
                                     ">",
                                 ),
-                                root: Join(
-                                    Chunk(
-                                        Space(
-                                            String(
-                                                "do",
-                                            ),
-                                            String(
-                                                "re",
-                                            ),
-                                        ),
+                                root: Space(
+                                    String(
+                                        "do",
                                     ),
-                                    Chunk(
+                                    Space(
+                                        String(
+                                            "re",
+                                        ),
                                         Space(
                                             String(
                                                 "mi",
@@ -361,18 +357,14 @@ Ok(
                                 prefix: Some(
                                     ">",
                                 ),
-                                root: Join(
-                                    Chunk(
-                                        Space(
-                                            String(
-                                                "so",
-                                            ),
-                                            String(
-                                                "la",
-                                            ),
-                                        ),
+                                root: Space(
+                                    String(
+                                        "so",
                                     ),
-                                    Chunk(
+                                    Space(
+                                        String(
+                                            "la",
+                                        ),
                                         Space(
                                             String(
                                                 "ti",
@@ -393,18 +385,14 @@ Ok(
                                 prefix: Some(
                                     ">",
                                 ),
-                                root: Join(
-                                    Chunk(
-                                        Space(
-                                            String(
-                                                "so",
-                                            ),
-                                            String(
-                                                "la",
-                                            ),
-                                        ),
+                                root: Space(
+                                    String(
+                                        "so",
                                     ),
-                                    Chunk(
+                                    Space(
+                                        String(
+                                            "la",
+                                        ),
                                         String(
                                             "ti",
                                         ),

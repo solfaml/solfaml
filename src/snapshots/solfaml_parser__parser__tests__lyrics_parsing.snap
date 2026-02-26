@@ -7,46 +7,40 @@ Ok(
         prefix: Some(
             "1.",
         ),
-        root: Join(
-            Chunk(
-                Space(
-                    String(
-                        "do",
-                    ),
-                    Concat(
-                        String(
-                            "re",
-                        ),
-                        NewLineSuffixed(
-                            String(
-                                "mi",
-                            ),
-                        ),
-                    ),
-                ),
+        root: Space(
+            String(
+                "do",
             ),
             Concat(
-                Chunk(
+                String(
+                    "re",
+                ),
+                Space(
+                    NewLineSuffixed(
+                        String(
+                            "mi",
+                        ),
+                    ),
                     Space(
                         String(
                             "fasola",
                         ),
-                        Split(
-                            String(
-                                "ti",
+                        Space(
+                            Split(
+                                String(
+                                    "ti",
+                                ),
+                                String(
+                                    "e",
+                                ),
                             ),
-                            String(
-                                "e",
+                            Space(
+                                String(
+                                    "do",
+                                ),
+                                Placeholder,
                             ),
                         ),
-                    ),
-                ),
-                Chunk(
-                    Space(
-                        String(
-                            "do",
-                        ),
-                        Placeholder,
                     ),
                 ),
             ),

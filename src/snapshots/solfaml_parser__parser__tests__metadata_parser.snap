@@ -22,7 +22,7 @@ Ok(
         ),
         (
             "description",
-            "Hello World!",
+            "Hello World!\nLorem Ipsum",
         ),
     ],
 )
