@@ -28,14 +28,40 @@ pub fn metadata_parser(input: &mut &str) -> ModalResult<Vec<(String, String)>> {
     separated(
         0..,
         seq! (
-            alphanumeric1.map(|s: &str|s.to_string()),
+            alphanumeric1.map(|s: &str| s.to_string()),
             _: space0,
             _: ":",
             _: space0,
-            take_while(1.., |ch: char| ch != '\n').map(|s: &str| s.to_string()),
+            metadata_value_parser,
         ),
-        "\n",
+        '\n',
     )
+    .parse_next(input)
+}
+
+pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
+    seq!(
+        take_while(1.., |ch: char| ch != '\n').map(|s: &str| s.to_string()),
+        repeat(
+            0..,
+            seq!(
+                _: '\n',
+                _:space0,
+                _: '\\',
+                _:space0,
+                take_while(1.., |ch: char| ch != '\n').map(|s: &str| s.to_string())
+            )
+            .map(|(seq,)| seq)
+        )
+        .map(|acc: Vec<String>| acc)
+    )
+    .map(|(first, rest)| {
+        [first]
+            .into_iter()
+            .chain(rest)
+            .collect::<Vec<_>>()
+            .join("\n")
+    })
     .parse_next(input)
 }
 
@@ -145,9 +171,9 @@ pub fn dynamic_base_parser(input: &mut &str) -> ModalResult<Dynamic> {
 pub fn base_lyrics_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
     seq!(
         alt((
-            "%".map(|_| LyricsChunk::Placeholder),
+            "$".map(|_| LyricsChunk::Placeholder),
             seq!(
-                take_while(1.., |ch: char| !" _<|$\n%\\".contains(ch)),
+                take_while(1.., |ch: char| !" _|$\n/\\".contains(ch)),
                 opt(seq!(_: "$", base_lyrics_parser)),
             )
             .map(|(lhs, rhs)| {
@@ -185,36 +211,18 @@ pub fn lyrics_chunk_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
     .parse_next(input)
 }
 
-pub fn lyrics_measure_parser(input: &mut &str) -> ModalResult<LyricsMeasure> {
-    seq!(
-        lyrics_chunk_parser,
-        opt(seq!(alt(("|", "<|>")), lyrics_measure_parser)),
-    )
-    .map(|(lhs, rhs)| {
-        let lhs = LyricsMeasure::Chunk(lhs);
-        match rhs {
-            Some((sep, rhs)) => match sep {
-                "|" => LyricsMeasure::Join(Box::new(lhs), rhs.into()),
-                "<|>" => LyricsMeasure::Concat(Box::new(lhs), rhs.into()),
-                _ => unreachable!(),
-            },
-            None => lhs,
-        }
-    })
-    .parse_next(input)
-}
-
 pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
     seq! {
         LyricsTree {
             prefix: opt(
-                seq! (
-                    _: "#",
-                    take_while(1.., |ch: char| ch != ' ').map(|s: &str| s.to_string()),
-                ).map(|(p,)| p)
+                delimited(
+                    "(",
+                    take_while(1.., |ch: char| ch != ')').map(|s: &str| s.to_string()),
+                    ")"
+                )
+                .map(|p| p)
             ),
-            root: lyrics_measure_parser,
-            _: opt(alt(("||", "|"))),
+            root: lyrics_chunk_parser,
         }
     }
     .parse_next(input)
@@ -352,7 +360,8 @@ mod tests {
 author: bar
 time: 4/4
 key: C
-description: Hello World!";
+description: Hello World!
+  \\ Lorem Ipsum";
 
         let metadata = metadata_parser.parse(source);
 
@@ -392,7 +401,7 @@ description: Hello World!";
 
     #[test]
     fn test_lyrics_parsing() {
-        let source = "#1. do re_mi\\ | fasola ti$e <|> do % ||";
+        let source = "(1.) do re_mi\\ fasola ti/e do $";
         let lyrics = lyrics_tree_parser.parse(source);
 
         insta::assert_debug_snapshot!(lyrics);
@@ -419,10 +428,10 @@ description: Hello World!";
 ---
 | d : r ||
 | d : r ||
-#> do re
+(>) do re
 | d : r ||
 | d : r ||
-#> doo ree
+(>) doo ree
 ";
 
         let result = solfa_parser.parse(source);
@@ -439,17 +448,17 @@ description: Hello World!";
 | d : r | m : f ||
 | d : r | m : f ||
 
-#> do re | mi fa
+(>) do re  mi fa
 
 | s : l | t : d' ||
 | s : l | t : d' ||
 
-#> so la | ti do
+(>) so la  ti do
 
 | s : l | t : - ||
 | s : l | t : - ||
 
-#> so la | ti
+(>) so la  ti
 ";
 
         let result = solfa_parser.parse(source);
@@ -483,15 +492,15 @@ description: Hello World!
 
 ---
 
-|: p[1]       <[4,7]             ^[8]   DC[9] ||
-|---------------------------------------------||
-| d : r : m | f . s , l :  t   | _d'_ : ri+2  ||
-| d : r : m | f . s , l :  t   | _d'_ : ri+2  ||
-| d : r : m | f . s , l :  t   | _d'_ : ra-1  ||
-| d : r : m | f . s , l :  t   |  d,  : ra-1  ||
+|: p[1]       <[4,7]             ^[8]  DC[9] ||
+|--------------------------------------------||
+|  d : r : m | f . s , l : t  | _d'_ : ri+2  ||
+|  d : r : m | f . s , l : t  | _d'_ : ri+2  ||
+|  d : r : m | f . s , l : t  | _d'_ : ra-1  ||
+|  d : r : m | f . s , l : t  |  d,  : ra-1  ||
 
-#1. do re_mi |   fasola   ti$e <|> do     re   ||
-#2. do re_mi |   fasola   ti$e <|> do     %    ||
+(1.) do re_mi    fasola    ti/e   do     re
+(2.) do re_mi    fasola    ti/e   do     $
 ";
 
         let solfa = solfa_parser.parse(source).unwrap();
