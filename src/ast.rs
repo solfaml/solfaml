@@ -12,7 +12,7 @@ pub struct Solfa {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum Dynamic {
     DC { pos: u16 },
     DS { pos: u16 },
@@ -24,7 +24,7 @@ pub enum Dynamic {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum DynamicLevel {
     FFF,
     FF,
@@ -37,7 +37,7 @@ pub enum DynamicLevel {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum BaseNote {
     D,
     R,
@@ -49,7 +49,7 @@ pub enum BaseNote {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum NoteVariant {
     Base,
     Raised,
@@ -57,8 +57,7 @@ pub enum NoteVariant {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify))]
-#[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum Octave {
     Base,
     Up(u8),
@@ -86,8 +85,9 @@ impl Note {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum BeatDivisionKind {
+    Medium,
     Normal,
     Half,
     Quarter,
@@ -112,8 +112,9 @@ impl BeatDivision {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum Measure {
+    Blank,
     EmptyNote,
     Note(Note),
     BeatDivision(BeatDivision),
@@ -172,7 +173,7 @@ pub struct StaffPartial {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum LyricsChunk {
     Placeholder,
     String(String),
@@ -183,7 +184,7 @@ pub enum LyricsChunk {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum LyricsMeasure {
     Chunk(LyricsChunk),
     Join(Box<LyricsMeasure>, Box<LyricsMeasure>),

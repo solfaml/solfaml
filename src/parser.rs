@@ -65,19 +65,6 @@ pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
     .parse_next(input)
 }
 
-pub fn dynamics_parser(input: &mut &str) -> ModalResult<Vec<Dynamic>> {
-    seq!(
-        opt("|:"),
-        _: space0,
-        separated(0.., dynamic_base_parser, space1),
-        _: space0,
-        _: opt(alt(("||", "|"))),
-        _: opt("\n"),
-    )
-    .map(|(prefix, e)| prefix.map(|_| e).unwrap_or_default())
-    .parse_next(input)
-}
-
 pub fn staff_parser(input: &mut &str) -> ModalResult<Staff> {
     seq! {
         StaffPartial {
@@ -107,31 +94,32 @@ pub fn staff_bar_parser(input: &mut &str) -> ModalResult<()> {
     .parse_next(input)
 }
 
-pub fn lyrics_parser(input: &mut &str) -> ModalResult<Vec<LyricsTree>> {
-    separated(
-        1..,
-        seq!(
-            _: multispace0,
-            lyrics_tree_parser,
-        )
-        .map(|(l,)| l),
-        multispace1,
+pub fn dynamics_parser(input: &mut &str) -> ModalResult<Vec<Dynamic>> {
+    seq!(
+        opt("|:"),
+        _: space0,
+        separated(0.., dynamic_base_parser, space1),
+        _: space0,
+        _: opt(alt(("||", "|"))),
+        _: opt("\n"),
     )
+    .map(|(prefix, e)| prefix.map(|_| e).unwrap_or_default())
     .parse_next(input)
 }
 
-pub fn pos_parser(input: &mut &str) -> ModalResult<u16> {
-    seq!(_: "[", _: space0, digit1, _: space0, _: "]")
-        .try_map(|(pos,): (&str,)| pos.parse())
-        .parse_next(input)
-}
-
-pub fn range_parser(input: &mut &str) -> ModalResult<(u16, u16)> {
-    seq!(_: "[", _: space0, digit1,_: ",", digit1, _: space0, _: "]")
-        .try_map(|(start, end): (&str, &str)| {
-            start.parse().and_then(|s| end.parse().map(|e| (s, e)))
-        })
-        .parse_next(input)
+pub fn dynamic_base_parser(input: &mut &str) -> ModalResult<Dynamic> {
+    alt((
+        dynamic_level_parser,
+        seq!(_: "DC", _: space0, pos_parser).map(|(pos,)| Dynamic::DC { pos }),
+        seq!(_: "DS", _: space0, pos_parser).map(|(pos,)| Dynamic::DS { pos }),
+        seq!(_: "$", _: space0, pos_parser).map(|(pos,)| Dynamic::Sign { pos }),
+        seq!(_: "^", _: space0, pos_parser).map(|(pos,)| Dynamic::Accent { pos }),
+        seq!(_: "<", _: space0, range_parser)
+            .map(|((start, end),)| Dynamic::Crescendo { start, end }),
+        seq!(_: ">", _: space0, range_parser)
+            .map(|((start, end),)| Dynamic::Decrescendo { start, end }),
+    ))
+    .parse_next(input)
 }
 
 pub fn dynamic_level_parser(input: &mut &str) -> ModalResult<Dynamic> {
@@ -153,18 +141,194 @@ pub fn dynamic_level_parser(input: &mut &str) -> ModalResult<Dynamic> {
     .parse_next(input)
 }
 
-pub fn dynamic_base_parser(input: &mut &str) -> ModalResult<Dynamic> {
+pub fn pos_parser(input: &mut &str) -> ModalResult<u16> {
+    seq!(_: "[", _: space0, digit1, _: space0, _: "]")
+        .try_map(|(pos,): (&str,)| pos.parse())
+        .parse_next(input)
+}
+
+pub fn range_parser(input: &mut &str) -> ModalResult<(u16, u16)> {
+    seq!(_: "[", _: space0, digit1,_: ",", digit1, _: space0, _: "]")
+        .try_map(|(start, end): (&str, &str)| {
+            start.parse().and_then(|s| end.parse().map(|e| (s, e)))
+        })
+        .parse_next(input)
+}
+
+pub fn measure_parser(input: &mut &str) -> ModalResult<Vec<Measure>> {
+    seq!(
+        _: multispace0,
+        _: opt("|"),
+        separated(1.., measure_base_parser, "|"),
+        _: alt(("||", "|")),
+    )
+    .map(|(m,)| m)
+    .parse_next(input)
+}
+
+pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(opt(":"), medium_div_parser, opt(":"),)
+        .map(|(rep_start, measure, rep_end)| match (rep_start, rep_end) {
+            (Some(_), Some(_)) => Measure::Repeated(measure.into()),
+            (Some(_), None) => Measure::RepeatStart(measure.into()),
+            (None, Some(_)) => Measure::RepeatEnd(measure.into()),
+            (None, None) => measure,
+        })
+        .parse_next(input)
+}
+
+pub fn medium_div_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(standard_div_parser, opt(seq!(_: "!", medium_div_parser)))
+        .map(|(lhs, rhs)| match rhs {
+            Some((rhs,)) => {
+                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Medium, lhs, rhs))
+            }
+            None => lhs,
+        })
+        .parse_next(input)
+}
+
+pub fn standard_div_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(half_div_parser, opt(seq!(_: ":", standard_div_parser)))
+        .map(|(lhs, rhs)| match rhs {
+            Some((rhs,)) => {
+                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Normal, lhs, rhs))
+            }
+            None => lhs,
+        })
+        .parse_next(input)
+}
+
+pub fn half_div_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(quarter_div_parser, opt(seq!(_: ".", half_div_parser)))
+        .map(|(lhs, rhs)| match rhs {
+            Some((rhs,)) => {
+                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Half, lhs, rhs))
+            }
+            None => lhs,
+        })
+        .parse_next(input)
+}
+
+pub fn quarter_div_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(base_beat_parser, opt(seq!(_: ",", quarter_div_parser)))
+        .map(|(lhs, rhs)| match rhs {
+            Some((rhs,)) => {
+                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Quarter, lhs, rhs))
+            }
+            _ => lhs,
+        })
+        .parse_next(input)
+}
+
+pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(
+        _: space0,
+        alt((
+            space1.map(|_| Measure::Blank),
+            "-".map(|_| Measure::EmptyNote),
+            note_parser.map(Measure::Note),
+            delimited("_", standard_div_parser, "_").map(|b| Measure::UnderlinedMeasure(b.into())),
+        )),
+        _: space0,
+    )
+    .map(|(b,)| b)
+    .parse_next(input)
+}
+
+pub fn note_parser(input: &mut &str) -> ModalResult<Note> {
+    seq! {
+        Note {
+            base: base_note_parser,
+            variant: opt(one_of(('a', 'i'))).map(|v| match v {
+                Some('a') => NoteVariant::Lowered,
+                Some('i') => NoteVariant::Raised,
+                _ => NoteVariant::Base,
+            }),
+            octave: opt(octave_parser).map(|o| o.unwrap_or(Octave::Base))
+        }
+    }
+    .parse_next(input)
+}
+
+pub fn base_note_parser(input: &mut &str) -> ModalResult<BaseNote> {
+    one_of(('d', 'r', 'm', 'f', 's', 'l', 't'))
+        .map(|note| match note {
+            'd' => BaseNote::D,
+            'r' => BaseNote::R,
+            'm' => BaseNote::M,
+            'f' => BaseNote::F,
+            's' => BaseNote::S,
+            'l' => BaseNote::L,
+            't' => BaseNote::T,
+            _ => unreachable!(),
+        })
+        .parse_next(input)
+}
+
+pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
     alt((
-        dynamic_level_parser,
-        seq!(_: "DC", _: space0, pos_parser).map(|(pos,)| Dynamic::DC { pos }),
-        seq!(_: "DS", _: space0, pos_parser).map(|(pos,)| Dynamic::DS { pos }),
-        seq!(_: "$", _: space0, pos_parser).map(|(pos,)| Dynamic::Sign { pos }),
-        seq!(_: "^", _: space0, pos_parser).map(|(pos,)| Dynamic::Accent { pos }),
-        seq!(_: "<", _: space0, range_parser)
-            .map(|((start, end),)| Dynamic::Crescendo { start, end }),
-        seq!(_: ">", _: space0, range_parser)
-            .map(|((start, end),)| Dynamic::Decrescendo { start, end }),
+        seq!(_: "+", digit1)
+            .try_map(|(d,): (&str,)| d.parse())
+            .map(Octave::Up),
+        seq!(_: "-", digit1)
+            .try_map(|(d,): (&str,)| d.parse())
+            .map(Octave::Down),
+        seq!(repeat(1.., ','), _: not(standard_div_parser))
+            .try_map(|(s,): (Vec<char>,)| s.len().try_into())
+            .map(Octave::Down),
+        repeat(1.., '\'')
+            .try_map(|s: Vec<char>| s.len().try_into())
+            .map(Octave::Up),
     ))
+    .parse_next(input)
+}
+
+pub fn lyrics_parser(input: &mut &str) -> ModalResult<Vec<LyricsTree>> {
+    separated(
+        1..,
+        seq!(
+            _: multispace0,
+            lyrics_tree_parser,
+        )
+        .map(|(l,)| l),
+        multispace1,
+    )
+    .parse_next(input)
+}
+
+pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
+    seq! {
+        LyricsTree {
+            prefix: opt(
+                delimited(
+                    "(",
+                    take_until(1.., ")").map(|s: &str| s.to_string()),
+                    ")"
+                )
+                .map(|p| p)
+            ),
+            root: lyrics_chunk_parser,
+        }
+    }
+    .parse_next(input)
+}
+
+pub fn lyrics_chunk_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
+    seq!(
+        _: space0,
+        base_lyrics_parser,
+        opt(seq!(one_of((' ', '_')), lyrics_chunk_parser)),
+        _: space0,
+    )
+    .map(|(lhs, rhs)| match rhs {
+        Some((sep, rhs)) => match sep {
+            '_' => LyricsChunk::Concat(Box::new(lhs), rhs.into()),
+            ' ' => LyricsChunk::Space(Box::new(lhs), rhs.into()),
+            _ => unreachable!(),
+        },
+        None => lhs,
+    })
     .parse_next(input)
 }
 
@@ -191,158 +355,6 @@ pub fn base_lyrics_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
         true => LyricsChunk::NewLineSuffixed(Box::new(lyrics)),
     })
     .parse_next(input)
-}
-
-pub fn lyrics_chunk_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
-    seq!(
-        _: space0,
-        base_lyrics_parser,
-        opt(seq!(one_of((' ', '_')), lyrics_chunk_parser)),
-        _: space0,
-    )
-    .map(|(lhs, rhs)| match rhs {
-        Some((sep, rhs)) => match sep {
-            '_' => LyricsChunk::Concat(Box::new(lhs), rhs.into()),
-            ' ' => LyricsChunk::Space(Box::new(lhs), rhs.into()),
-            _ => unreachable!(),
-        },
-        None => lhs,
-    })
-    .parse_next(input)
-}
-
-pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
-    seq! {
-        LyricsTree {
-            prefix: opt(
-                delimited(
-                    "(",
-                    take_until(1.., ")").map(|s: &str| s.to_string()),
-                    ")"
-                )
-                .map(|p| p)
-            ),
-            root: lyrics_chunk_parser,
-        }
-    }
-    .parse_next(input)
-}
-
-pub fn measure_parser(input: &mut &str) -> ModalResult<Vec<Measure>> {
-    seq!(
-        _: multispace0,
-        _: opt("|"),
-        separated(1.., measure_base_parser, "|"),
-        _: alt(("||", "|")),
-    )
-    .map(|(m,)| m)
-    .parse_next(input)
-}
-
-pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(opt(":"), normal_div_parser, opt(":"),)
-        .map(|(rep_start, measure, rep_end)| match (rep_start, rep_end) {
-            (Some(_), Some(_)) => Measure::Repeated(measure.into()),
-            (Some(_), None) => Measure::RepeatStart(measure.into()),
-            (None, Some(_)) => Measure::RepeatEnd(measure.into()),
-            (None, None) => measure,
-        })
-        .parse_next(input)
-}
-
-pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
-    alt((
-        seq!(_: "+", digit1)
-            .try_map(|(d,): (&str,)| d.parse())
-            .map(Octave::Up),
-        seq!(_: "-", digit1)
-            .try_map(|(d,): (&str,)| d.parse())
-            .map(Octave::Down),
-        seq!(repeat(1.., ','), _: not(normal_div_parser))
-            .try_map(|(s,): (Vec<char>,)| s.len().try_into())
-            .map(Octave::Down),
-        repeat(1.., '\'')
-            .try_map(|s: Vec<char>| s.len().try_into())
-            .map(Octave::Up),
-    ))
-    .parse_next(input)
-}
-
-pub fn base_note_parser(input: &mut &str) -> ModalResult<BaseNote> {
-    one_of(('d', 'r', 'm', 'f', 's', 'l', 't'))
-        .map(|note| match note {
-            'd' => BaseNote::D,
-            'r' => BaseNote::R,
-            'm' => BaseNote::M,
-            'f' => BaseNote::F,
-            's' => BaseNote::S,
-            'l' => BaseNote::L,
-            't' => BaseNote::T,
-            _ => unreachable!(),
-        })
-        .parse_next(input)
-}
-
-pub fn note_parser(input: &mut &str) -> ModalResult<Note> {
-    seq! {
-        Note {
-            base: base_note_parser,
-            variant: opt(one_of(('a', 'i'))).map(|v| match v {
-                Some('a') => NoteVariant::Lowered,
-                Some('i') => NoteVariant::Raised,
-                _ => NoteVariant::Base,
-            }),
-            octave: opt(octave_parser).map(|o| o.unwrap_or(Octave::Base))
-        }
-    }
-    .parse_next(input)
-}
-
-pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(
-        _: space0,
-        alt((
-            "-".map(|_| Measure::EmptyNote),
-            note_parser.map(Measure::Note),
-            delimited("_", normal_div_parser, "_").map(|b| Measure::UnderlinedMeasure(b.into())),
-        )),
-        _: space0,
-    )
-    .map(|(b,)| b)
-    .parse_next(input)
-}
-
-pub fn quarter_div_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(base_beat_parser, opt(seq!(_: ",", quarter_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Quarter, lhs, rhs))
-            }
-            _ => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn half_div_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(quarter_div_parser, opt(seq!(_: ".", half_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Half, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn normal_div_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(half_div_parser, opt(seq!(_: ":", normal_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Normal, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
 }
 
 #[cfg(test)]
@@ -499,8 +511,8 @@ description: Hello World!
 |  d : r : m | f . s , l : t  | _d'_ : ra-1  ||
 |  d : r : m | f . s , l : t  |  d,  : ra-1  ||
 
-(1.) do re_mi    fasola    ti/e   do     re
-(2.) do re_mi    fasola    ti/e   do     $
+(1.) do re_mi   fasola    ti/e   do     re
+(2.) do re_mi   fasola    ti/e   do     $
 ";
 
         let solfa = solfa_parser.parse(source).unwrap();
