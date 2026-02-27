@@ -134,22 +134,32 @@ pub struct Staff {
 
 impl From<StaffPartial> for Staff {
     fn from(value: StaffPartial) -> Self {
-        let results = [Some(value.line1), value.line2, value.line3, value.line4]
+        let results = value
+            .lines
             .into_iter()
             .enumerate()
-            .flat_map(|(idx, line)| {
-                line.map(|l| {
-                    let measures = l.measures;
-                    let lyrics = l.lyrics.map(|ly| IndexedLyricsSet::from((idx, ly)));
-                    (measures, lyrics)
-                })
+            .map(|(idx, line)| {
+                let measures = line.measures;
+                let lyrics = line.lyrics.map(|ly| IndexedLyricsSet::from((idx, ly)));
+                (measures, lyrics)
             })
             .collect::<Vec<_>>();
 
+        let mut lyrics = Vec::new();
+        let mut measures = Vec::new();
+
+        for result in results {
+            measures.push(result.0);
+
+            if let Some(value) = result.1 {
+                lyrics.push(value);
+            }
+        }
+
         Self {
             dynamics: value.dynamics.unwrap_or_default(),
-            lyrics: results.iter().map(|(_, l)| l).flatten().cloned().collect(),
-            measures: results.into_iter().map(|(m, _)| m).collect(),
+            lyrics,
+            measures,
         }
     }
 }
@@ -165,10 +175,7 @@ pub struct StaffLine {
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct StaffPartial {
     pub dynamics: Option<Vec<Dynamic>>,
-    pub line1: StaffLine,
-    pub line2: Option<StaffLine>,
-    pub line3: Option<StaffLine>,
-    pub line4: Option<StaffLine>,
+    pub lines: Vec<StaffLine>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

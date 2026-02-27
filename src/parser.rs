@@ -70,10 +70,7 @@ pub fn staff_parser(input: &mut &str) -> ModalResult<Staff> {
         StaffPartial {
             dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
             _: opt(seq!(staff_bar_parser, "\n")),
-            line1: staff_line_parser,
-            line2: opt(staff_line_parser),
-            line3: opt(staff_line_parser),
-            line4: opt(staff_line_parser),
+            lines: separated(4, staff_line_parser, multispace1)
         }
     }
     .map(Staff::from)
