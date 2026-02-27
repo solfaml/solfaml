@@ -29,65 +29,6 @@ Ok(
                                 kind: Normal,
                             },
                         ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                kind: Normal,
-                            },
-                        ),
-                    ],
-                    [
                         RepeatStart(
                             BeatDivision(
                                 BeatDivision {
@@ -101,92 +42,6 @@ Ok(
                                     rhs: Note(
                                         Note {
                                             base: F,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                        RepeatStart(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: M,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: F,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                        RepeatStart(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: M,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: F,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                        RepeatStart(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: M,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: F,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                    ],
-                    [
-                        RepeatEnd(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: S,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: L,
                                             variant: Base,
                                             octave: Base,
                                         },
@@ -215,71 +70,6 @@ Ok(
                                     kind: Normal,
                                 },
                             ),
-                        ),
-                        RepeatEnd(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: S,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: L,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                        RepeatEnd(
-                            BeatDivision(
-                                BeatDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: S,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: L,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Normal,
-                                },
-                            ),
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: T,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Up(
-                                            1,
-                                        ),
-                                    },
-                                ),
-                                kind: Normal,
-                            },
                         ),
                         BeatDivision(
                             BeatDivision {
@@ -302,6 +92,69 @@ Ok(
                                 kind: Normal,
                             },
                         ),
+                    ],
+                    [
+                        BeatDivision(
+                            BeatDivision {
+                                lhs: Note(
+                                    Note {
+                                        base: D,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                rhs: Note(
+                                    Note {
+                                        base: R,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                kind: Normal,
+                            },
+                        ),
+                        RepeatStart(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: M,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: F,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
+                        ),
+                        RepeatEnd(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: S,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: L,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
+                        ),
                         BeatDivision(
                             BeatDivision {
                                 lhs: Note(
@@ -322,6 +175,153 @@ Ok(
                                 ),
                                 kind: Normal,
                             },
+                        ),
+                    ],
+                    [
+                        BeatDivision(
+                            BeatDivision {
+                                lhs: Note(
+                                    Note {
+                                        base: D,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                rhs: Note(
+                                    Note {
+                                        base: R,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                kind: Normal,
+                            },
+                        ),
+                        RepeatStart(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: M,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: F,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
+                        ),
+                        RepeatEnd(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: S,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: L,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
+                        ),
+                        BeatDivision(
+                            BeatDivision {
+                                lhs: Note(
+                                    Note {
+                                        base: T,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                rhs: Note(
+                                    Note {
+                                        base: D,
+                                        variant: Base,
+                                        octave: Up(
+                                            1,
+                                        ),
+                                    },
+                                ),
+                                kind: Normal,
+                            },
+                        ),
+                    ],
+                    [
+                        BeatDivision(
+                            BeatDivision {
+                                lhs: Note(
+                                    Note {
+                                        base: D,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                rhs: Note(
+                                    Note {
+                                        base: R,
+                                        variant: Base,
+                                        octave: Base,
+                                    },
+                                ),
+                                kind: Normal,
+                            },
+                        ),
+                        RepeatStart(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: M,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: F,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
+                        ),
+                        RepeatEnd(
+                            BeatDivision(
+                                BeatDivision {
+                                    lhs: Note(
+                                        Note {
+                                            base: S,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: Note(
+                                        Note {
+                                            base: L,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    kind: Normal,
+                                },
+                            ),
                         ),
                         BeatDivision(
                             BeatDivision {

@@ -128,51 +128,50 @@ pub enum Measure {
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Staff {
     pub dynamics: Vec<Dynamic>,
-    pub measures: Vec<[Measure; 4]>,
+    pub measures: Vec<Vec<Measure>>,
     pub lyrics: Vec<IndexedLyricsSet>,
 }
 
 impl From<StaffPartial> for Staff {
     fn from(value: StaffPartial) -> Self {
-        let measures = value
-            .voice1
+        let results = [Some(value.line1), value.line2, value.line3, value.line4]
             .into_iter()
-            .zip(value.voice2) // FIXME: Error handling and validation
-            .zip(value.voice3)
-            .zip(value.voice4)
-            .map(|(((m1, m2), m3), m4)| [m1, m2, m3, m4])
-            .collect();
-
-        let lyrics = vec![
-            value.lyrics1.map(|l| IndexedLyricsSet::from((0, l))),
-            value.lyrics2.map(|l| IndexedLyricsSet::from((1, l))),
-            value.lyrics3.map(|l| IndexedLyricsSet::from((2, l))),
-            value.lyrics4.map(|l| IndexedLyricsSet::from((3, l))),
-        ];
+            .enumerate()
+            .flat_map(|(idx, line)| {
+                line.map(|l| {
+                    let measures = l.measures;
+                    let lyrics = l.lyrics.map(|ly| IndexedLyricsSet::from((idx, ly)));
+                    (measures, lyrics)
+                })
+            })
+            .collect::<Vec<_>>();
 
         Self {
             dynamics: value.dynamics.unwrap_or_default(),
-            lyrics: lyrics.into_iter().flatten().collect(),
-            measures,
+            lyrics: results.iter().map(|(_, l)| l).flatten().cloned().collect(),
+            measures: results.into_iter().map(|(m, _)| m).collect(),
         }
     }
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-pub struct StaffPartial {
-    pub dynamics: Option<Vec<Dynamic>>,
-    pub voice1: Vec<Measure>,
-    pub lyrics1: Option<Vec<LyricsTree>>,
-    pub voice2: Vec<Measure>,
-    pub lyrics2: Option<Vec<LyricsTree>>,
-    pub voice3: Vec<Measure>,
-    pub lyrics3: Option<Vec<LyricsTree>>,
-    pub voice4: Vec<Measure>,
-    pub lyrics4: Option<Vec<LyricsTree>>,
+pub struct StaffLine {
+    pub measures: Vec<Measure>,
+    pub lyrics: Option<Vec<LyricsTree>>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct StaffPartial {
+    pub dynamics: Option<Vec<Dynamic>>,
+    pub line1: StaffLine,
+    pub line2: Option<StaffLine>,
+    pub line3: Option<StaffLine>,
+    pub line4: Option<StaffLine>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum LyricsChunk {
     Placeholder,
@@ -183,30 +182,22 @@ pub enum LyricsChunk {
     Concat(Box<LyricsChunk>, Box<LyricsChunk>),
 }
 
-#[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-pub enum LyricsMeasure {
-    Chunk(LyricsChunk),
-    Join(Box<LyricsMeasure>, Box<LyricsMeasure>),
-    Concat(Box<LyricsMeasure>, Box<LyricsMeasure>),
-}
-
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct LyricsTree {
     pub prefix: Option<String>,
     pub root: LyricsChunk,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct IndexedLyricsSet {
-    pub index: u8,
+    pub index: usize,
     pub lyrics: Vec<LyricsTree>,
 }
 
-impl From<(u8, Vec<LyricsTree>)> for IndexedLyricsSet {
-    fn from((index, lyrics): (u8, Vec<LyricsTree>)) -> Self {
+impl From<(usize, Vec<LyricsTree>)> for IndexedLyricsSet {
+    fn from((index, lyrics): (usize, Vec<LyricsTree>)) -> Self {
         Self { index, lyrics }
     }
 }

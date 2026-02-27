@@ -70,18 +70,10 @@ pub fn staff_parser(input: &mut &str) -> ModalResult<Staff> {
         StaffPartial {
             dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
             _: opt(seq!(staff_bar_parser, "\n")),
-            voice1: measure_parser,
-            _: multispace1,
-            lyrics1: opt(lyrics_parser),
-            voice2: measure_parser,
-            _: multispace1,
-            lyrics2: opt(lyrics_parser),
-            voice3: measure_parser,
-            _: multispace1,
-            lyrics3: opt(lyrics_parser),
-            voice4: measure_parser,
-            _: multispace1,
-            lyrics4: opt(lyrics_parser),
+            line1: staff_line_parser,
+            line2: opt(staff_line_parser),
+            line3: opt(staff_line_parser),
+            line4: opt(staff_line_parser),
         }
     }
     .map(Staff::from)
@@ -94,6 +86,14 @@ pub fn staff_bar_parser(input: &mut &str) -> ModalResult<()> {
         _: take_while(1.., |ch: char| ch == '-'),
         _: alt(("||", "|")),
     )
+    .parse_next(input)
+}
+
+pub fn staff_line_parser(input: &mut &str) -> ModalResult<StaffLine> {
+    seq!(StaffLine {
+        measures: measure_parser,
+        lyrics: opt(seq!(_: multispace1, lyrics_parser).map(|(l,)| l)),
+    })
     .parse_next(input)
 }
 

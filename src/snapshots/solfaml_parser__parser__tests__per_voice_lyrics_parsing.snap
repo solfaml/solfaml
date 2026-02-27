@@ -29,6 +29,8 @@ Ok(
                                 kind: Normal,
                             },
                         ),
+                    ],
+                    [
                         BeatDivision(
                             BeatDivision {
                                 lhs: Note(
@@ -48,6 +50,8 @@ Ok(
                                 kind: Normal,
                             },
                         ),
+                    ],
+                    [
                         BeatDivision(
                             BeatDivision {
                                 lhs: Note(
@@ -67,6 +71,8 @@ Ok(
                                 kind: Normal,
                             },
                         ),
+                    ],
+                    [
                         BeatDivision(
                             BeatDivision {
                                 lhs: Note(
