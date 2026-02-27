@@ -151,7 +151,7 @@ impl From<StaffPartial> for Staff {
         ];
 
         Self {
-            dynamics: value.dynamics,
+            dynamics: value.dynamics.unwrap_or_default(),
             lyrics: lyrics.into_iter().flatten().collect(),
             measures,
         }
@@ -161,7 +161,7 @@ impl From<StaffPartial> for Staff {
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct StaffPartial {
-    pub dynamics: Vec<Dynamic>,
+    pub dynamics: Option<Vec<Dynamic>>,
     pub voice1: Vec<Measure>,
     pub lyrics1: Option<Vec<LyricsTree>>,
     pub voice2: Vec<Measure>,

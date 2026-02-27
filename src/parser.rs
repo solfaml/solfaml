@@ -1,7 +1,7 @@
 use super::ast::*;
 
 use winnow::{
-    ascii::{alphanumeric1, digit1, multispace0, multispace1, space0, space1},
+    ascii::{alphanumeric1, digit1, multispace0, multispace1, space0},
     combinator::{alt, delimited, not, opt, repeat, separated, seq},
     prelude::*,
     token::{one_of, take_until, take_while},
@@ -68,15 +68,19 @@ pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
 pub fn staff_parser(input: &mut &str) -> ModalResult<Staff> {
     seq! {
         StaffPartial {
-            dynamics: dynamics_parser,
-            _: opt(staff_bar_parser),
+            dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
+            _: opt(seq!(staff_bar_parser, "\n")),
             voice1: measure_parser,
+            _: multispace1,
             lyrics1: opt(lyrics_parser),
             voice2: measure_parser,
+            _: multispace1,
             lyrics2: opt(lyrics_parser),
             voice3: measure_parser,
+            _: multispace1,
             lyrics3: opt(lyrics_parser),
             voice4: measure_parser,
+            _: multispace1,
             lyrics4: opt(lyrics_parser),
         }
     }
@@ -89,21 +93,19 @@ pub fn staff_bar_parser(input: &mut &str) -> ModalResult<()> {
         _: "|",
         _: take_while(1.., |ch: char| ch == '-'),
         _: alt(("||", "|")),
-        _: "\n"
     )
     .parse_next(input)
 }
 
 pub fn dynamics_parser(input: &mut &str) -> ModalResult<Vec<Dynamic>> {
     seq!(
-        opt("|:"),
+        _: "|:",
         _: space0,
-        separated(0.., dynamic_base_parser, space1),
+        separated(0.., dynamic_base_parser, space0),
         _: space0,
-        _: opt(alt(("||", "|"))),
-        _: opt("\n"),
+        _: alt(("||", "|")),
     )
-    .map(|(prefix, e)| prefix.map(|_| e).unwrap_or_default())
+    .map(|(d,)| d)
     .parse_next(input)
 }
 
@@ -225,7 +227,6 @@ pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
     seq!(
         _: space0,
         alt((
-            space1.map(|_| Measure::Blank),
             "-".map(|_| Measure::EmptyNote),
             note_parser.map(Measure::Note),
             delimited("_", standard_div_parser, "_").map(|b| Measure::UnderlinedMeasure(b.into())),
@@ -285,16 +286,7 @@ pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
 }
 
 pub fn lyrics_parser(input: &mut &str) -> ModalResult<Vec<LyricsTree>> {
-    separated(
-        1..,
-        seq!(
-            _: multispace0,
-            lyrics_tree_parser,
-        )
-        .map(|(l,)| l),
-        multispace1,
-    )
-    .parse_next(input)
+    separated(1.., lyrics_tree_parser, multispace1).parse_next(input)
 }
 
 pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
