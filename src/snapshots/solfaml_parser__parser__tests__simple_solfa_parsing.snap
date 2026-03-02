@@ -9,7 +9,8 @@ Ok(
             author: None,
             time: None,
             key: None,
-            voices: None,
+            description: None,
+            vocals: None,
             extra: {},
         },
         staffs: [

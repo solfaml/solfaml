@@ -19,10 +19,11 @@ Solfa {
         key: Some(
             C,
         ),
-        voices: None,
-        extra: {
-            "description": "Hello World!",
-        },
+        description: Some(
+            "Hello World!",
+        ),
+        vocals: None,
+        extra: {},
     },
     staffs: [
         Staff {

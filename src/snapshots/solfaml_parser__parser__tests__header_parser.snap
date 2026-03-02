@@ -19,9 +19,10 @@ Ok(
         key: Some(
             C,
         ),
-        voices: None,
-        extra: {
-            "description": "Hello World!\nLorem Ipsum",
-        },
+        description: Some(
+            "Hello World!\nLorem Ipsum",
+        ),
+        vocals: None,
+        extra: {},
     },
 )
