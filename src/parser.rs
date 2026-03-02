@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use super::ast::*;
 
 use winnow::{
@@ -7,24 +9,24 @@ use winnow::{
     token::{one_of, take_until, take_while},
 };
 
+pub const DEFAULT_VOICE_LINES: usize = 4;
+
 pub fn solfa_parser(input: &mut &str) -> ModalResult<Solfa> {
     seq! {
         Solfa {
             _: multispace0,
-            header: metadata_parser.map(|metadata| {
-                metadata.into_iter().collect()
-            }),
+            header: header_parser,
             _: multispace0,
             _: "---",
             _: multispace1,
-            staffs: separated(1.., staff_parser, multispace1),
+            staffs: separated(1.., |input: &mut &str| staff_parser(input, &header), multispace1),
             _: multispace0,
         }
     }
     .parse_next(input)
 }
 
-pub fn metadata_parser(input: &mut &str) -> ModalResult<Vec<(String, String)>> {
+pub fn header_parser(input: &mut &str) -> ModalResult<Header> {
     separated(
         0..,
         seq! (
@@ -36,6 +38,7 @@ pub fn metadata_parser(input: &mut &str) -> ModalResult<Vec<(String, String)>> {
         ),
         '\n',
     )
+    .try_map(|metadata: HashMap<_, _>| Header::try_from(metadata))
     .parse_next(input)
 }
 
@@ -65,12 +68,14 @@ pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
     .parse_next(input)
 }
 
-pub fn staff_parser(input: &mut &str) -> ModalResult<Staff> {
+pub fn staff_parser(input: &mut &str, header: &Header) -> ModalResult<Staff> {
+    let voices = header.vocals.unwrap_or(DEFAULT_VOICE_LINES);
+
     seq! {
         StaffPartial {
             dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
             _: opt(seq!(staff_bar_parser, "\n")),
-            lines: separated(4, staff_line_parser, multispace1)
+            lines: separated(voices, staff_line_parser, multispace1)
         }
     }
     .map(Staff::from)
@@ -360,12 +365,12 @@ mod tests {
     use winnow::Parser;
 
     use crate::parser::{
-        dynamics_parser, lyrics_tree_parser, measure_parser, metadata_parser, note_parser,
+        dynamics_parser, header_parser, lyrics_tree_parser, measure_parser, note_parser,
         solfa_parser,
     };
 
     #[test]
-    fn test_metadata_parser() {
+    fn test_header_parser() {
         let source = "title: foo
 author: bar
 time: 4/4
@@ -373,7 +378,7 @@ key: C
 description: Hello World!
   \\ Lorem Ipsum";
 
-        let metadata = metadata_parser.parse(source);
+        let metadata = header_parser.parse(source);
 
         insta::assert_debug_snapshot!(metadata);
     }
@@ -515,6 +520,6 @@ description: Hello World!
 
         let solfa = solfa_parser.parse(source).unwrap();
 
-        insta::assert_debug_snapshot!(solfa.staffs);
+        insta::assert_debug_snapshot!(solfa);
     }
 }

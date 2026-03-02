@@ -1,5 +1,7 @@
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
+
+use crate::error::Error;
 
 #[cfg(feature = "wasm")]
 use {tsify::Tsify, wasm_bindgen::prelude::*};
@@ -7,8 +9,105 @@ use {tsify::Tsify, wasm_bindgen::prelude::*};
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Solfa {
-    pub header: HashMap<String, String>,
+    pub header: Header,
     pub staffs: Vec<Staff>,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct Header {
+    pub title: Option<String>,
+    pub author: Option<String>,
+    pub time: Option<Time>,
+    pub key: Option<Key>,
+    pub description: Option<String>,
+    pub vocals: Option<usize>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, String>,
+}
+
+impl TryFrom<HashMap<String, String>> for Header {
+    type Error = Error;
+
+    fn try_from(mut value: HashMap<String, String>) -> Result<Self, Self::Error> {
+        Ok(Header {
+            title: value.remove("title"),
+            author: value.remove("author"),
+            description: value.remove("description"),
+            time: value.remove("time").map(|t| t.parse()).transpose()?,
+            key: value.remove("key").map(|t| t.parse()).transpose()?,
+            vocals: value
+                .remove("vocals")
+                .map(|t| t.parse().map_err(|_| Error::InvalidVocals(t)))
+                .transpose()?,
+            extra: value,
+        })
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct Time {
+    pub top: usize,
+    pub bottom: usize,
+}
+
+impl FromStr for Time {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (top, bottom) = s
+            .split_once("/")
+            .and_then(|(top, bottom)| top.parse().ok().zip(bottom.parse().ok()))
+            .ok_or(Error::InvalidTime(s.to_string()))?;
+
+        Ok(Self { top, bottom })
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum Key {
+    C,
+    G,
+    D,
+    A,
+    E,
+    B,
+    #[serde(rename = "F#")]
+    Fs,
+    #[serde(rename = "C#")]
+    Cs,
+    F,
+    Bb,
+    Eb,
+    Ab,
+    Db,
+    Gb,
+    Cb,
+}
+
+impl FromStr for Key {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "C" => Ok(Self::C),
+            "D" => Ok(Self::D),
+            "A" => Ok(Self::A),
+            "E" => Ok(Self::E),
+            "B" => Ok(Self::B),
+            "F#" => Ok(Self::Fs),
+            "C#" => Ok(Self::Cs),
+            "Bb" => Ok(Self::Bb),
+            "Eb" => Ok(Self::Eb),
+            "Ab" => Ok(Self::Ab),
+            "Db" => Ok(Self::Db),
+            "Gb" => Ok(Self::Gb),
+            "Cb" => Ok(Self::Cb),
+            _ => Err(Error::InvalidKey(s.to_string())),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize)]

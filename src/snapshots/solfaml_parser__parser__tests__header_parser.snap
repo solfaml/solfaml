@@ -1,0 +1,27 @@
+---
+source: src/parser.rs
+expression: metadata
+---
+Ok(
+    Header {
+        title: Some(
+            "foo",
+        ),
+        author: Some(
+            "bar",
+        ),
+        time: Some(
+            Time {
+                top: 4,
+                bottom: 4,
+            },
+        ),
+        key: Some(
+            C,
+        ),
+        voices: None,
+        extra: {
+            "description": "Hello World!\nLorem Ipsum",
+        },
+    },
+)

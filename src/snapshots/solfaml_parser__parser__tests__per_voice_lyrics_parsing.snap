@@ -4,7 +4,14 @@ expression: result
 ---
 Ok(
     Solfa {
-        header: {},
+        header: Header {
+            title: None,
+            author: None,
+            time: None,
+            key: None,
+            voices: None,
+            extra: {},
+        },
         staffs: [
             Staff {
                 dynamics: [],
