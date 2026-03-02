@@ -1,8 +1,8 @@
 use super::ast::*;
 
 use winnow::{
-    ascii::{alphanumeric1, digit1, multispace0, multispace1, space0},
-    combinator::{alt, delimited, not, opt, repeat, separated, seq},
+    ascii::{alphanumeric1, digit1, multispace0, multispace1, space0, space1},
+    combinator::{alt, delimited, not, opt, peek, repeat, separated, seq},
     prelude::*,
     token::{one_of, take_until, take_while},
 };
@@ -210,14 +210,17 @@ pub fn half_div_parser(input: &mut &str) -> ModalResult<Measure> {
 }
 
 pub fn quarter_div_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(base_beat_parser, opt(seq!(_: ",", quarter_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Quarter, lhs, rhs))
-            }
-            _ => lhs,
-        })
-        .parse_next(input)
+    seq!(
+        alt((blank_parser, base_beat_parser)),
+        opt(seq!(_: ",", quarter_div_parser))
+    )
+    .map(|(lhs, rhs)| match rhs {
+        Some((rhs,)) => {
+            Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Quarter, lhs, rhs))
+        }
+        _ => lhs,
+    })
+    .parse_next(input)
 }
 
 pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
@@ -232,6 +235,12 @@ pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
     )
     .map(|(b,)| b)
     .parse_next(input)
+}
+
+pub fn blank_parser(input: &mut &str) -> ModalResult<Measure> {
+    seq!(space1, peek(alt((".", ":", "!", "|"))))
+        .map(|_| Measure::Blank)
+        .parse_next(input)
 }
 
 pub fn note_parser(input: &mut &str) -> ModalResult<Note> {
@@ -272,7 +281,7 @@ pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
         seq!(_: "-", digit1)
             .try_map(|(d,): (&str,)| d.parse())
             .map(Octave::Down),
-        seq!(repeat(1.., ','), _: not(standard_div_parser))
+        seq!(repeat(1.., ','), _: not(base_note_parser))
             .try_map(|(s,): (Vec<char>,)| s.len().try_into())
             .map(Octave::Down),
         repeat(1.., '\'')
@@ -394,7 +403,7 @@ description: Hello World!
 
     #[test]
     fn test_measure_parsing() {
-        let source = "| d : r .  m , f  | s : _l . t_ , - ||";
+        let source = "| : | d : r .  m , f  | s : _l . t_ , - ||";
         let measure = measure_parser.parse(source);
 
         insta::assert_debug_snapshot!(measure);

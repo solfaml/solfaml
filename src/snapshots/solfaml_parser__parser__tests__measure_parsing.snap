@@ -6,6 +6,13 @@ Ok(
     [
         BeatDivision(
             BeatDivision {
+                lhs: Blank,
+                rhs: Blank,
+                kind: Normal,
+            },
+        ),
+        BeatDivision(
+            BeatDivision {
                 lhs: Note(
                     Note {
                         base: D,
