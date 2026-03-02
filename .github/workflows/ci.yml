@@ -20,7 +20,7 @@ jobs:
         run: git submodule update --init
 
       - name: Test
-        run: cargo test --lib --verbose
+        run: cargo test --workspace --lib --verbose
 
       - name: Lint
         run: cargo clippy --all-features -- -D warnings

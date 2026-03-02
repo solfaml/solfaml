@@ -9,7 +9,7 @@ use winnow::{
     token::{one_of, take_until, take_while},
 };
 
-pub const DEFAULT_VOICE_LINES: usize = 4;
+pub const DEFAULT_VOCAL_LINES: usize = 4;
 
 pub fn solfa_parser(input: &mut &str) -> ModalResult<Solfa> {
     seq! {
@@ -69,13 +69,13 @@ pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
 }
 
 pub fn staff_parser(input: &mut &str, header: &Header) -> ModalResult<Staff> {
-    let voices = header.vocals.unwrap_or(DEFAULT_VOICE_LINES);
+    let vocals = header.vocals.unwrap_or(DEFAULT_VOCAL_LINES);
 
     seq! {
         StaffPartial {
             dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
             _: opt(seq!(staff_bar_parser, "\n")),
-            lines: separated(voices, staff_line_parser, multispace1)
+            lines: separated(vocals, staff_line_parser, multispace1)
         }
     }
     .map(Staff::from)
