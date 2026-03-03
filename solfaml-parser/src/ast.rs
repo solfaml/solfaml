@@ -253,13 +253,13 @@ impl MeasureDivision {
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct StaffLine {
     pub measures: Vec<Measure>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Measure {
     pub kind: MeasureKind,
     pub root: MeasureChunk,
