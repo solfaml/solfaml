@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr};
 
 use crate::error::Error;
 
@@ -21,21 +21,25 @@ pub struct Header {
     pub time: Option<Time>,
     pub key: Option<Key>,
     pub description: Option<String>,
+    pub tempo: Option<usize>,
     pub vocals: Option<usize>,
-    #[serde(flatten)]
-    pub extra: HashMap<String, String>,
+    pub extra: BTreeMap<String, String>,
 }
 
-impl TryFrom<HashMap<String, String>> for Header {
+impl TryFrom<BTreeMap<String, String>> for Header {
     type Error = Error;
 
-    fn try_from(mut value: HashMap<String, String>) -> Result<Self, Self::Error> {
+    fn try_from(mut value: BTreeMap<String, String>) -> Result<Self, Self::Error> {
         Ok(Header {
             title: value.remove("title"),
             author: value.remove("author"),
             description: value.remove("description"),
             time: value.remove("time").map(|t| t.parse()).transpose()?,
             key: value.remove("key").map(|t| t.parse()).transpose()?,
+            tempo: value
+                .remove("tempo")
+                .map(|t| t.parse().map_err(|_| Error::InvalidTempo(t)))
+                .transpose()?,
             vocals: value
                 .remove("vocals")
                 .map(|t| t.parse().map_err(|_| Error::InvalidVocals(t)))
@@ -62,6 +66,12 @@ impl FromStr for Time {
             .ok_or(Error::InvalidTime(s.to_string()))?;
 
         Ok(Self { top, bottom })
+    }
+}
+
+impl std::fmt::Display for Time {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.top, self.bottom)
     }
 }
 
@@ -110,6 +120,16 @@ impl FromStr for Key {
     }
 }
 
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Key::Fs => write!(f, "F#"),
+            Key::Cs => write!(f, "C#"),
+            _ => write!(f, "{self:?}"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum Dynamic {
@@ -135,7 +155,7 @@ pub enum DynamicLevel {
     PPP,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum BaseNote {
     D,
@@ -147,7 +167,7 @@ pub enum BaseNote {
     T,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum NoteVariant {
     Base,
@@ -155,7 +175,7 @@ pub enum NoteVariant {
     Lowered,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum Octave {
     Base,
@@ -163,7 +183,7 @@ pub enum Octave {
     Down(u8),
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Note {
     pub base: BaseNote,
@@ -183,9 +203,31 @@ impl Note {
     }
 }
 
+impl std::fmt::Display for Note {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let base = format!("{:?}", self.base).to_lowercase();
+
+        let modifier = match self.variant {
+            NoteVariant::Base => "",
+            NoteVariant::Raised => "i",
+            NoteVariant::Lowered => "a",
+        };
+
+        let suffix = match self.octave {
+            Octave::Base => "".to_string(),
+            Octave::Up(1) => "'".to_string(),
+            Octave::Down(1) => ",".to_string(),
+            Octave::Up(value) => format!("+{value}"),
+            Octave::Down(value) => format!("-{value}"),
+        };
+
+        write!(f, "{base}{modifier}{suffix}")
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-pub enum BeatDivisionKind {
+pub enum MeasureDivisionKind {
     Medium,
     Normal,
     Half,
@@ -194,15 +236,15 @@ pub enum BeatDivisionKind {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-pub struct BeatDivision {
-    pub lhs: Box<Measure>,
-    pub rhs: Box<Measure>,
-    pub kind: BeatDivisionKind,
+pub struct MeasureDivision {
+    pub lhs: Box<MeasureChunk>,
+    pub rhs: Box<MeasureChunk>,
+    pub kind: MeasureDivisionKind,
 }
 
-impl BeatDivision {
-    pub fn new(kind: BeatDivisionKind, lhs: Measure, rhs: Measure) -> Self {
-        BeatDivision {
+impl MeasureDivision {
+    pub fn new(kind: MeasureDivisionKind, lhs: MeasureChunk, rhs: MeasureChunk) -> Self {
+        MeasureDivision {
             lhs: lhs.into(),
             rhs: rhs.into(),
             kind,
@@ -212,22 +254,41 @@ impl BeatDivision {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-pub enum Measure {
-    Blank,
+pub struct StaffLine {
+    pub measures: Vec<Measure>,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub struct Measure {
+    pub kind: MeasureKind,
+    pub root: MeasureChunk,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum MeasureKind {
+    Normal,
+    Repeated,
+    RepeatStart,
+    RepeatEnd,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum MeasureChunk {
     EmptyNote,
+    ProlongedNote,
     Note(Note),
-    BeatDivision(BeatDivision),
-    UnderlinedMeasure(Box<Measure>),
-    Repeated(Box<Measure>),
-    RepeatStart(Box<Measure>),
-    RepeatEnd(Box<Measure>),
+    Division(MeasureDivision),
+    Underlined(Box<MeasureChunk>),
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Staff {
     pub dynamics: Vec<Dynamic>,
-    pub measures: Vec<Vec<Measure>>,
+    pub lines: Vec<StaffLine>,
     pub lyrics: Vec<IndexedLyricsSet>,
 }
 
@@ -245,12 +306,12 @@ impl From<StaffPartial> for Staff {
             .collect::<Vec<_>>();
 
         let mut lyrics = Vec::new();
-        let mut measures = Vec::new();
+        let mut lines = Vec::new();
 
-        for result in results {
-            measures.push(result.0);
+        for (measures, lyrics_set) in results {
+            lines.push(StaffLine { measures });
 
-            if let Some(value) = result.1 {
+            if let Some(value) = lyrics_set {
                 lyrics.push(value);
             }
         }
@@ -258,14 +319,14 @@ impl From<StaffPartial> for Staff {
         Self {
             dynamics: value.dynamics.unwrap_or_default(),
             lyrics,
-            measures,
+            lines,
         }
     }
 }
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-pub struct StaffLine {
+pub struct StaffLinePartial {
     pub measures: Vec<Measure>,
     pub lyrics: Option<Vec<LyricsTree>>,
 }
@@ -274,7 +335,7 @@ pub struct StaffLine {
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct StaffPartial {
     pub dynamics: Option<Vec<Dynamic>>,
-    pub lines: Vec<StaffLine>,
+    pub lines: Vec<StaffLinePartial>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

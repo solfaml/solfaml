@@ -1,5 +1,5 @@
 ---
-source: src/parser.rs
+source: solfaml-parser/src/parser.rs
 expression: result
 ---
 Ok(
@@ -10,173 +10,206 @@ Ok(
             time: None,
             key: None,
             description: None,
+            tempo: None,
             vocals: None,
             extra: {},
         },
         staffs: [
             Staff {
                 dynamics: [],
-                measures: [
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                lines: [
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: R,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: M,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: F,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: M,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: F,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: R,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: M,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: F,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: M,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: F,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: R,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: M,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: F,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: M,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: F,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: R,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: R,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: M,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: F,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: M,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: F,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                    ],
+                        ],
+                    },
                 ],
                 lyrics: [
                     IndexedLyricsSet {
@@ -211,159 +244,191 @@ Ok(
             },
             Staff {
                 dynamics: [],
-                measures: [
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: S,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: L,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                lines: [
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: T,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Up(
-                                            1,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: S,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
                                         ),
-                                    },
-                                ),
-                                kind: Normal,
-                            },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: S,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: L,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: T,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: D,
-                                        variant: Base,
-                                        octave: Up(
-                                            1,
+                                        rhs: Note(
+                                            Note {
+                                                base: L,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
                                         ),
+                                        kind: Normal,
                                     },
                                 ),
-                                kind: Normal,
                             },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: S,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: L,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: T,
-                                        variant: Base,
-                                        octave: Base,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: T,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Up(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        kind: Normal,
                                     },
                                 ),
-                                rhs: EmptyNote,
+                            },
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
                                 kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: S,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: L,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
                             },
-                        ),
-                    ],
-                    [
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: S,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: L,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
+                            Measure {
                                 kind: Normal,
-                            },
-                        ),
-                        BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: T,
-                                        variant: Base,
-                                        octave: Base,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: T,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: D,
+                                                variant: Base,
+                                                octave: Up(
+                                                    1,
+                                                ),
+                                            },
+                                        ),
+                                        kind: Normal,
                                     },
                                 ),
-                                rhs: EmptyNote,
-                                kind: Normal,
                             },
-                        ),
-                    ],
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
+                                kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: S,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: L,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
+                            },
+                            Measure {
+                                kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: T,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: ProlongedNote,
+                                        kind: Normal,
+                                    },
+                                ),
+                            },
+                        ],
+                    },
+                    StaffLine {
+                        measures: [
+                            Measure {
+                                kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: S,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: L,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Normal,
+                                    },
+                                ),
+                            },
+                            Measure {
+                                kind: Normal,
+                                root: Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: T,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: ProlongedNote,
+                                        kind: Normal,
+                                    },
+                                ),
+                            },
+                        ],
+                    },
                 ],
                 lyrics: [
                     IndexedLyricsSet {

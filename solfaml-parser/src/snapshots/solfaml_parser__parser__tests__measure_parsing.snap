@@ -1,97 +1,106 @@
 ---
-source: src/parser.rs
+source: solfaml-parser/src/parser.rs
 expression: measure
 ---
 Ok(
     [
-        BeatDivision(
-            BeatDivision {
-                lhs: Blank,
-                rhs: Blank,
-                kind: Normal,
-            },
-        ),
-        BeatDivision(
-            BeatDivision {
-                lhs: Note(
-                    Note {
-                        base: D,
-                        variant: Base,
-                        octave: Base,
-                    },
-                ),
-                rhs: BeatDivision(
-                    BeatDivision {
-                        lhs: Note(
-                            Note {
-                                base: R,
-                                variant: Base,
-                                octave: Base,
-                            },
-                        ),
-                        rhs: BeatDivision(
-                            BeatDivision {
-                                lhs: Note(
-                                    Note {
-                                        base: M,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                rhs: Note(
-                                    Note {
-                                        base: F,
-                                        variant: Base,
-                                        octave: Base,
-                                    },
-                                ),
-                                kind: Quarter,
-                            },
-                        ),
-                        kind: Half,
-                    },
-                ),
-                kind: Normal,
-            },
-        ),
-        BeatDivision(
-            BeatDivision {
-                lhs: Note(
-                    Note {
-                        base: S,
-                        variant: Base,
-                        octave: Base,
-                    },
-                ),
-                rhs: BeatDivision(
-                    BeatDivision {
-                        lhs: UnderlinedMeasure(
-                            BeatDivision(
-                                BeatDivision {
+        Measure {
+            kind: Normal,
+            root: Division(
+                MeasureDivision {
+                    lhs: EmptyNote,
+                    rhs: EmptyNote,
+                    kind: Normal,
+                },
+            ),
+        },
+        Measure {
+            kind: Normal,
+            root: Division(
+                MeasureDivision {
+                    lhs: Note(
+                        Note {
+                            base: D,
+                            variant: Base,
+                            octave: Base,
+                        },
+                    ),
+                    rhs: Division(
+                        MeasureDivision {
+                            lhs: Note(
+                                Note {
+                                    base: R,
+                                    variant: Base,
+                                    octave: Base,
+                                },
+                            ),
+                            rhs: Division(
+                                MeasureDivision {
                                     lhs: Note(
                                         Note {
-                                            base: L,
+                                            base: M,
                                             variant: Base,
                                             octave: Base,
                                         },
                                     ),
                                     rhs: Note(
                                         Note {
-                                            base: T,
+                                            base: F,
                                             variant: Base,
                                             octave: Base,
                                         },
                                     ),
-                                    kind: Half,
+                                    kind: Quarter,
                                 },
                             ),
-                        ),
-                        rhs: EmptyNote,
-                        kind: Quarter,
-                    },
-                ),
-                kind: Normal,
-            },
-        ),
+                            kind: Half,
+                        },
+                    ),
+                    kind: Normal,
+                },
+            ),
+        },
+        Measure {
+            kind: Normal,
+            root: Division(
+                MeasureDivision {
+                    lhs: Note(
+                        Note {
+                            base: S,
+                            variant: Base,
+                            octave: Base,
+                        },
+                    ),
+                    rhs: Division(
+                        MeasureDivision {
+                            lhs: Underlined(
+                                Division(
+                                    MeasureDivision {
+                                        lhs: Note(
+                                            Note {
+                                                base: L,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        rhs: Note(
+                                            Note {
+                                                base: T,
+                                                variant: Base,
+                                                octave: Base,
+                                            },
+                                        ),
+                                        kind: Half,
+                                    },
+                                ),
+                            ),
+                            rhs: ProlongedNote,
+                            kind: Quarter,
+                        },
+                    ),
+                    kind: Normal,
+                },
+            ),
+        },
     ],
 )

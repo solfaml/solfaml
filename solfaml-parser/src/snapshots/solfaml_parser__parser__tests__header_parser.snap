@@ -1,5 +1,5 @@
 ---
-source: src/parser.rs
+source: solfaml-parser/src/parser.rs
 expression: metadata
 ---
 Ok(
@@ -22,6 +22,7 @@ Ok(
         description: Some(
             "Hello World!\nLorem Ipsum",
         ),
+        tempo: None,
         vocals: None,
         extra: {},
     },

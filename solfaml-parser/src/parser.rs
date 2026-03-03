@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use super::ast::*;
 
@@ -38,7 +38,7 @@ pub fn header_parser(input: &mut &str) -> ModalResult<Header> {
         ),
         '\n',
     )
-    .try_map(|metadata: HashMap<_, _>| Header::try_from(metadata))
+    .try_map(|metadata: BTreeMap<_, _>| Header::try_from(metadata))
     .parse_next(input)
 }
 
@@ -91,8 +91,8 @@ pub fn staff_bar_parser(input: &mut &str) -> ModalResult<()> {
     .parse_next(input)
 }
 
-pub fn staff_line_parser(input: &mut &str) -> ModalResult<StaffLine> {
-    seq!(StaffLine {
+pub fn staff_line_parser(input: &mut &str) -> ModalResult<StaffLinePartial> {
+    seq!(StaffLinePartial {
         measures: measure_parser,
         lyrics: opt(seq!(_: multispace1, lyrics_parser).map(|(l,)| l)),
     })
@@ -172,69 +172,73 @@ pub fn measure_parser(input: &mut &str) -> ModalResult<Vec<Measure>> {
 
 pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
     seq!(opt(":"), medium_div_parser, opt(":"),)
-        .map(|(rep_start, measure, rep_end)| match (rep_start, rep_end) {
-            (Some(_), Some(_)) => Measure::Repeated(measure.into()),
-            (Some(_), None) => Measure::RepeatStart(measure.into()),
-            (None, Some(_)) => Measure::RepeatEnd(measure.into()),
-            (None, None) => measure,
+        .map(|(rep_start, root, rep_end)| {
+            let kind = match (rep_start, rep_end) {
+                (Some(_), Some(_)) => MeasureKind::Repeated,
+                (Some(_), None) => MeasureKind::RepeatStart,
+                (None, Some(_)) => MeasureKind::RepeatEnd,
+                (None, None) => MeasureKind::Normal,
+            };
+
+            Measure { kind, root }
         })
         .parse_next(input)
 }
 
-pub fn medium_div_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn medium_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(standard_div_parser, opt(seq!(_: "!", medium_div_parser)))
         .map(|(lhs, rhs)| match rhs {
             Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Medium, lhs, rhs))
+                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs))
             }
             None => lhs,
         })
         .parse_next(input)
 }
 
-pub fn standard_div_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn standard_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(half_div_parser, opt(seq!(_: ":", standard_div_parser)))
         .map(|(lhs, rhs)| match rhs {
             Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Normal, lhs, rhs))
+                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Normal, lhs, rhs))
             }
             None => lhs,
         })
         .parse_next(input)
 }
 
-pub fn half_div_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn half_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(quarter_div_parser, opt(seq!(_: ".", half_div_parser)))
         .map(|(lhs, rhs)| match rhs {
             Some((rhs,)) => {
-                Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Half, lhs, rhs))
+                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs))
             }
             None => lhs,
         })
         .parse_next(input)
 }
 
-pub fn quarter_div_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn quarter_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(
         alt((blank_parser, base_beat_parser)),
         opt(seq!(_: ",", quarter_div_parser))
     )
     .map(|(lhs, rhs)| match rhs {
         Some((rhs,)) => {
-            Measure::BeatDivision(BeatDivision::new(BeatDivisionKind::Quarter, lhs, rhs))
+            MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs))
         }
         _ => lhs,
     })
     .parse_next(input)
 }
 
-pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn base_beat_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(
         _: space0,
         alt((
-            "-".map(|_| Measure::EmptyNote),
-            note_parser.map(Measure::Note),
-            delimited("_", standard_div_parser, "_").map(|b| Measure::UnderlinedMeasure(b.into())),
+            "-".map(|_| MeasureChunk::ProlongedNote),
+            note_parser.map(MeasureChunk::Note),
+            delimited("_", standard_div_parser, "_").map(|b| MeasureChunk::Underlined(b.into())),
         )),
         _: space0,
     )
@@ -242,9 +246,9 @@ pub fn base_beat_parser(input: &mut &str) -> ModalResult<Measure> {
     .parse_next(input)
 }
 
-pub fn blank_parser(input: &mut &str) -> ModalResult<Measure> {
+pub fn blank_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(space1, peek(alt((".", ":", "!", "|"))))
-        .map(|_| Measure::Blank)
+        .map(|_| MeasureChunk::EmptyNote)
         .parse_next(input)
 }
 
@@ -286,7 +290,7 @@ pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
         seq!(_: "-", digit1)
             .try_map(|(d,): (&str,)| d.parse())
             .map(Octave::Down),
-        seq!(repeat(1.., ','), _: not(base_note_parser))
+        seq!(repeat(1.., ','), _: not(seq!(_: space0, base_note_parser)))
             .try_map(|(s,): (Vec<char>,)| s.len().try_into())
             .map(Octave::Down),
         repeat(1.., '\'')
@@ -321,7 +325,14 @@ pub fn lyrics_chunk_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
     seq!(
         _: space0,
         base_lyrics_parser,
-        opt(seq!(one_of((' ', '_')), lyrics_chunk_parser)),
+        opt(seq!(
+            alt((
+                seq!(' ', _: space0, _: not('_')),
+                seq!(_: space0, '_'),
+            ))
+            .map(|(c,)| c),
+            lyrics_chunk_parser
+        )),
         _: space0,
     )
     .map(|(lhs, rhs)| match rhs {

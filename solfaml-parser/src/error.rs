@@ -4,6 +4,7 @@ use std::error::Error as StdError;
 pub enum Error {
     InvalidTime(String),
     InvalidKey(String),
+    InvalidTempo(String),
     InvalidVocals(String),
 }
 
@@ -12,6 +13,7 @@ impl std::fmt::Display for Error {
         match self {
             Error::InvalidTime(time) => write!(f, "invalid time definition: {time}"),
             Error::InvalidKey(key) => write!(f, "invalid key: {key}"),
+            Error::InvalidTempo(key) => write!(f, "invalid tempo: {key}"),
             Error::InvalidVocals(voice) => write!(f, "invalid voice definition: {voice}"),
         }
     }
