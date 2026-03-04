@@ -131,16 +131,14 @@ Solfa {
                             kind: Normal,
                             root: Division(
                                 MeasureDivision {
-                                    lhs: Underlined(
-                                        Note(
-                                            Note {
-                                                base: D,
-                                                variant: Base,
-                                                octave: Up(
-                                                    1,
-                                                ),
-                                            },
-                                        ),
+                                    lhs: UnderlinedNote(
+                                        Note {
+                                            base: D,
+                                            variant: Base,
+                                            octave: Up(
+                                                1,
+                                            ),
+                                        },
                                     ),
                                     rhs: Note(
                                         Note {
@@ -243,16 +241,14 @@ Solfa {
                             kind: Normal,
                             root: Division(
                                 MeasureDivision {
-                                    lhs: Underlined(
-                                        Note(
-                                            Note {
-                                                base: D,
-                                                variant: Base,
-                                                octave: Up(
-                                                    1,
-                                                ),
-                                            },
-                                        ),
+                                    lhs: UnderlinedNote(
+                                        Note {
+                                            base: D,
+                                            variant: Base,
+                                            octave: Up(
+                                                1,
+                                            ),
+                                        },
                                     ),
                                     rhs: Note(
                                         Note {
@@ -355,16 +351,14 @@ Solfa {
                             kind: Normal,
                             root: Division(
                                 MeasureDivision {
-                                    lhs: Underlined(
-                                        Note(
-                                            Note {
-                                                base: D,
-                                                variant: Base,
-                                                octave: Up(
-                                                    1,
-                                                ),
-                                            },
-                                        ),
+                                    lhs: UnderlinedNote(
+                                        Note {
+                                            base: D,
+                                            variant: Base,
+                                            octave: Up(
+                                                1,
+                                            ),
+                                        },
                                     ),
                                     rhs: Note(
                                         Note {

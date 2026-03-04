@@ -73,29 +73,27 @@ Ok(
                     ),
                     rhs: Division(
                         MeasureDivision {
-                            lhs: Underlined(
-                                Division(
-                                    MeasureDivision {
-                                        lhs: Note(
-                                            Note {
-                                                base: L,
-                                                variant: Base,
-                                                octave: Base,
-                                            },
-                                        ),
-                                        rhs: Note(
-                                            Note {
-                                                base: T,
-                                                variant: Base,
-                                                octave: Base,
-                                            },
-                                        ),
-                                        kind: Half,
-                                    },
-                                ),
+                            lhs: UnderlineStart(
+                                Note {
+                                    base: L,
+                                    variant: Base,
+                                    octave: Base,
+                                },
                             ),
-                            rhs: ProlongedNote,
-                            kind: Quarter,
+                            rhs: Division(
+                                MeasureDivision {
+                                    lhs: UnderlineEnd(
+                                        Note {
+                                            base: T,
+                                            variant: Base,
+                                            octave: Base,
+                                        },
+                                    ),
+                                    rhs: ProlongedNote,
+                                    kind: Quarter,
+                                },
+                            ),
+                            kind: Half,
                         },
                     ),
                     kind: Normal,

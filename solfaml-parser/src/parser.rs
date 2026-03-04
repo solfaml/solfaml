@@ -237,12 +237,26 @@ pub fn base_beat_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
         _: space0,
         alt((
             "-".map(|_| MeasureChunk::ProlongedNote),
-            note_parser.map(MeasureChunk::Note),
-            delimited("_", standard_div_parser, "_").map(|b| MeasureChunk::Underlined(b.into())),
+            extended_note_parser,
         )),
         _: space0,
     )
     .map(|(b,)| b)
+    .parse_next(input)
+}
+
+pub fn extended_note_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
+    seq!(
+        opt(seq!('_', _: space0)),
+        note_parser,
+        opt(seq!(_: space0, '_')),
+    )
+    .map(|(l, n, r)| match (l, r) {
+        (None, None) => MeasureChunk::Note(n),
+        (Some(_), None) => MeasureChunk::UnderlineStart(n),
+        (None, Some(_)) => MeasureChunk::UnderlineEnd(n),
+        (Some(_), Some(_)) => MeasureChunk::UnderlinedNote(n),
+    })
     .parse_next(input)
 }
 
@@ -529,7 +543,9 @@ description: Hello World!
 (2.) do re_mi   fasola    ti/e   do     $
 ";
 
-        let solfa = solfa_parser.parse(source).unwrap();
+        let solfa = solfa_parser
+            .parse(source)
+            .unwrap_or_else(|err| panic!("{}", err.to_string()));
 
         insta::assert_debug_snapshot!(solfa);
     }

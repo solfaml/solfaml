@@ -281,7 +281,9 @@ pub enum MeasureChunk {
     ProlongedNote,
     Note(Note),
     Division(MeasureDivision),
-    Underlined(Box<MeasureChunk>),
+    UnderlineStart(Note),
+    UnderlineEnd(Note),
+    UnderlinedNote(Note),
 }
 
 #[derive(Debug, PartialEq, Serialize)]
