@@ -1,7 +1,9 @@
 [workspace]
-members = ["solfaml-parser"]
+members = ["solfaml-formatter", "solfaml-parser"]
 resolver = "3"
 
 [workspace.dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
+
 insta = "1.44.3"
+solfaml-parser = { path = "./solfaml-parser" }
