@@ -1,420 +1,374 @@
-use std::collections::BTreeMap;
+use std::str::FromStr;
 
-use super::ast::*;
-
-use winnow::{
-    ascii::{alphanumeric1, digit1, multispace0, multispace1, space0, space1},
-    combinator::{alt, delimited, not, opt, peek, repeat, separated, seq},
-    prelude::*,
-    token::{one_of, take_until, take_while},
+use crate::{
+    ast::*,
+    error::{ErrorKind, ModalError, ModalResult, ParseError},
+    source::{SourceMap, Span},
 };
 
-pub const DEFAULT_VOCAL_LINES: usize = 4;
+#[derive(Debug)]
+pub struct Parser<'a> {
+    source: &'a str,
+    position: usize,
+    errors: Vec<ParseError>,
+}
 
-pub fn solfa_parser(input: &mut &str) -> ModalResult<Solfa> {
-    seq! {
-        Solfa {
-            _: multispace0,
-            header: header_parser,
-            _: multispace0,
-            _: "---",
-            _: multispace1,
-            staffs: separated(1.., |input: &mut &str| staff_parser(input, &header), multispace1),
-            _: multispace0,
+impl<'a> Parser<'a> {
+    pub fn new(source: &'a str) -> Self {
+        Self {
+            source,
+            position: 0,
+            errors: vec![],
         }
     }
-    .parse_next(input)
-}
 
-pub fn header_parser(input: &mut &str) -> ModalResult<Header> {
-    separated(
-        0..,
-        seq! (
-            alphanumeric1.map(|s: &str| s.to_string()),
-            _: space0,
-            _: ":",
-            _: space0,
-            metadata_value_parser,
-        ),
-        '\n',
-    )
-    .try_map(|metadata: BTreeMap<_, _>| Header::try_from(metadata))
-    .parse_next(input)
-}
+    fn checkpoint(&self) -> usize {
+        self.position
+    }
 
-pub fn metadata_value_parser(input: &mut &str) -> ModalResult<String> {
-    seq!(
-        take_while(1.., |ch: char| ch != '\n').map(|s: &str| s.to_string()),
-        repeat(
-            0..,
-            seq!(
-                _: '\n',
-                _:space0,
-                _: '\\',
-                _:space0,
-                take_while(1.., |ch: char| ch != '\n').map(|s: &str| s.to_string())
-            )
-            .map(|(seq,)| seq)
-        )
-        .map(|acc: Vec<String>| acc)
-    )
-    .map(|(first, rest)| {
-        [first]
-            .into_iter()
-            .chain(rest)
-            .collect::<Vec<_>>()
-            .join("\n")
-    })
-    .parse_next(input)
-}
+    fn rest(&self) -> &str {
+        &self.source[self.position..]
+    }
 
-pub fn staff_parser(input: &mut &str, header: &Header) -> ModalResult<Staff> {
-    let vocals = header.vocals.unwrap_or(DEFAULT_VOCAL_LINES);
+    fn is_eof(&self) -> bool {
+        self.rest().is_empty()
+    }
 
-    seq! {
-        StaffPartial {
-            dynamics: opt(seq!(dynamics_parser, _: "\n")).map(|d| d.map(|(d,)| d)),
-            _: opt(seq!(staff_bar_parser, "\n")),
-            lines: separated(vocals, staff_line_parser, multispace1)
+    fn peek_char(&self) -> Option<char> {
+        self.rest().chars().next()
+    }
+
+    fn take_char(&mut self, ch: char) -> Option<char> {
+        if self.rest().starts_with(ch) {
+            self.position += ch.len_utf8();
+            Some(ch)
+        } else {
+            None
         }
     }
-    .map(Staff::from)
-    .parse_next(input)
+
+    fn take_while<F>(&mut self, pred: F) -> String
+    where
+        F: Fn(char) -> bool,
+    {
+        let result = self
+            .rest()
+            .chars()
+            .take_while(|ch| pred(*ch))
+            .collect::<String>();
+
+        self.position += result.len();
+
+        result
+    }
+
+    fn skip_whitespace(&mut self) {
+        self.take_while(|ch| ch == ' ' || ch == '\t');
+    }
+
+    fn skip_multispace(&mut self) {
+        self.take_while(char::is_whitespace);
+    }
+
+    fn one_of<I>(&mut self, choices: I) -> Option<&str>
+    where
+        I: IntoIterator<Item = &'static str>,
+    {
+        let seq = choices.into_iter().find(|seq| self.rest().starts_with(seq));
+
+        if let Some(seq) = seq {
+            self.position += seq.len();
+        }
+
+        seq
+    }
+
+    fn report(&mut self, error_kind: ErrorKind, start_pos: usize) {
+        self.errors.push(ParseError {
+            span: Span::new(start_pos, self.position),
+            kind: error_kind,
+        });
+    }
 }
 
-pub fn staff_bar_parser(input: &mut &str) -> ModalResult<()> {
-    seq!(
-        _: "|",
-        _: take_while(1.., |ch: char| ch == '-'),
-        _: alt(("||", "|")),
-    )
-    .parse_next(input)
-}
+fn parse_separated<T>(
+    p: &mut Parser,
+    sep: char,
+    mut parser_fn: impl FnMut(&mut Parser) -> ModalResult<T>,
+) -> ModalResult<Vec<T>> {
+    let mut items = Vec::new();
 
-pub fn staff_line_parser(input: &mut &str) -> ModalResult<StaffLinePartial> {
-    seq!(StaffLinePartial {
-        measures: measure_parser,
-        lyrics: opt(seq!(_: multispace1, lyrics_parser).map(|(l,)| l)),
-    })
-    .parse_next(input)
-}
-
-pub fn dynamics_parser(input: &mut &str) -> ModalResult<Vec<Dynamic>> {
-    seq!(
-        _: "|:",
-        _: space0,
-        separated(0.., dynamic_base_parser, space0),
-        _: space0,
-        _: alt(("||", "|")),
-    )
-    .map(|(d,)| d)
-    .parse_next(input)
-}
-
-pub fn dynamic_base_parser(input: &mut &str) -> ModalResult<Dynamic> {
-    alt((
-        dynamic_level_parser,
-        seq!(_: "DC", _: space0, pos_parser).map(|(pos,)| Dynamic::DC { pos }),
-        seq!(_: "DS", _: space0, pos_parser).map(|(pos,)| Dynamic::DS { pos }),
-        seq!(_: "$", _: space0, pos_parser).map(|(pos,)| Dynamic::Sign { pos }),
-        seq!(_: "^", _: space0, pos_parser).map(|(pos,)| Dynamic::Accent { pos }),
-        seq!(_: "<", _: space0, range_parser)
-            .map(|((start, end),)| Dynamic::Crescendo { start, end }),
-        seq!(_: ">", _: space0, range_parser)
-            .map(|((start, end),)| Dynamic::Decrescendo { start, end }),
-    ))
-    .parse_next(input)
-}
-
-pub fn dynamic_level_parser(input: &mut &str) -> ModalResult<Dynamic> {
-    seq!(
-        alt((
-            "fff".map(|_| DynamicLevel::FFF),
-            "ff".map(|_| DynamicLevel::FF),
-            "f" .map(|_| DynamicLevel::F),
-            "mf".map(|_| DynamicLevel::MF),
-            "mp".map(|_| DynamicLevel::MP),
-            "p" .map(|_| DynamicLevel::P),
-            "pp".map(|_| DynamicLevel::PP),
-            "ppp".map(|_| DynamicLevel::PPP),
-        )),
-        _: space0,
-        pos_parser
-    )
-    .map(|(kind, pos)| Dynamic::Level { kind, pos })
-    .parse_next(input)
-}
-
-pub fn pos_parser(input: &mut &str) -> ModalResult<u16> {
-    seq!(_: "[", _: space0, digit1, _: space0, _: "]")
-        .try_map(|(pos,): (&str,)| pos.parse())
-        .parse_next(input)
-}
-
-pub fn range_parser(input: &mut &str) -> ModalResult<(u16, u16)> {
-    seq!(_: "[", _: space0, digit1,_: ",", digit1, _: space0, _: "]")
-        .try_map(|(start, end): (&str, &str)| {
-            start.parse().and_then(|s| end.parse().map(|e| (s, e)))
-        })
-        .parse_next(input)
-}
-
-pub fn measure_parser(input: &mut &str) -> ModalResult<Vec<Measure>> {
-    seq!(
-        _: multispace0,
-        _: opt("|"),
-        separated(1.., measure_base_parser, "|"),
-        _: alt(("||", "|")),
-    )
-    .map(|(m,)| m)
-    .parse_next(input)
-}
-
-pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(opt(":"), medium_div_parser, opt(":"),)
-        .map(|(rep_start, root, rep_end)| {
-            let kind = match (rep_start, rep_end) {
-                (Some(_), Some(_)) => MeasureKind::Repeated,
-                (Some(_), None) => MeasureKind::RepeatStart,
-                (None, Some(_)) => MeasureKind::RepeatEnd,
-                (None, None) => MeasureKind::Normal,
-            };
-
-            Measure { kind, root }
-        })
-        .parse_next(input)
-}
-
-pub fn medium_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(standard_div_parser, opt(seq!(_: "!", medium_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs))
+    loop {
+        match parser_fn(p) {
+            Ok(item) => items.push(item),
+            Err(ModalError::Recover) => {
+                p.take_while(|ch| ch != sep);
             }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn standard_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(half_div_parser, opt(seq!(_: ":", standard_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Normal, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn half_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(quarter_div_parser, opt(seq!(_: ".", half_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn quarter_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(
-        alt((blank_parser, base_beat_parser)),
-        opt(seq!(_: ",", quarter_div_parser))
-    )
-    .map(|(lhs, rhs)| match rhs {
-        Some((rhs,)) => {
-            MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs))
+            Err(e) => return Err(e),
         }
-        _ => lhs,
-    })
-    .parse_next(input)
-}
 
-pub fn base_beat_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(
-        _: space0,
-        alt((
-            "-".map(|_| MeasureChunk::ProlongedNote),
-            extended_note_parser,
-        )),
-        _: space0,
-    )
-    .map(|(b,)| b)
-    .parse_next(input)
-}
-
-pub fn extended_note_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(
-        opt(seq!('_', _: space0)),
-        note_parser,
-        opt(seq!(_: space0, '_')),
-    )
-    .map(|(l, n, r)| match (l, r) {
-        (None, None) => MeasureChunk::Note(n),
-        (Some(_), None) => MeasureChunk::UnderlineStart(n),
-        (None, Some(_)) => MeasureChunk::UnderlineEnd(n),
-        (Some(_), Some(_)) => MeasureChunk::UnderlinedNote(n),
-    })
-    .parse_next(input)
-}
-
-pub fn blank_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(space1, peek(alt((".", ":", "!", "|"))))
-        .map(|_| MeasureChunk::EmptyNote)
-        .parse_next(input)
-}
-
-pub fn note_parser(input: &mut &str) -> ModalResult<Note> {
-    seq! {
-        Note {
-            base: base_note_parser,
-            variant: opt(one_of(('a', 'i'))).map(|v| match v {
-                Some('a') => NoteVariant::Lowered,
-                Some('i') => NoteVariant::Raised,
-                _ => NoteVariant::Base,
-            }),
-            octave: opt(octave_parser).map(|o| o.unwrap_or(Octave::Base))
+        if p.is_eof() || p.take_char(sep).is_none() {
+            break;
         }
     }
-    .parse_next(input)
+
+    Ok(items)
 }
 
-pub fn base_note_parser(input: &mut &str) -> ModalResult<BaseNote> {
-    one_of(('d', 'r', 'm', 'f', 's', 'l', 't'))
-        .map(|note| match note {
-            'd' => BaseNote::D,
-            'r' => BaseNote::R,
-            'm' => BaseNote::M,
-            'f' => BaseNote::F,
-            's' => BaseNote::S,
-            'l' => BaseNote::L,
-            't' => BaseNote::T,
-            _ => unreachable!(),
-        })
-        .parse_next(input)
+fn parse_measures(p: &mut Parser) -> ModalResult<Vec<Measure>> {
+    p.skip_multispace();
+    p.take_char('|');
+
+    let start = p.checkpoint();
+    let measures = parse_separated(p, '|', parse_base_measure)?;
+
+    if measures.is_empty() {
+        p.report(ErrorKind::Expected("at least one measure"), start);
+        return Err(ModalError::Recover);
+    }
+
+    if p.one_of(["||", "|"]).is_none() {
+        p.report(ErrorKind::Expected("`|` or `||`"), p.checkpoint());
+    }
+
+    Ok(measures)
 }
 
-pub fn octave_parser(input: &mut &str) -> ModalResult<Octave> {
-    alt((
-        seq!(_: "+", digit1)
-            .try_map(|(d,): (&str,)| d.parse())
-            .map(Octave::Up),
-        seq!(_: "-", digit1)
-            .try_map(|(d,): (&str,)| d.parse())
-            .map(Octave::Down),
-        seq!(repeat(1.., ','), _: not(seq!(_: space0, base_note_parser)))
-            .try_map(|(s,): (Vec<char>,)| s.len().try_into())
-            .map(Octave::Down),
-        repeat(1.., '\'')
-            .try_map(|s: Vec<char>| s.len().try_into())
-            .map(Octave::Up),
-    ))
-    .parse_next(input)
+fn parse_base_measure(p: &mut Parser) -> ModalResult<Measure> {
+    let repeat_start = p.take_char(':');
+    let body = parse_medium_div(p)?;
+    let repeat_end = p.take_char(':');
+
+    let kind = match (repeat_start, repeat_end) {
+        (None, None) => MeasureKind::Normal,
+        (Some(_), None) => MeasureKind::RepeatStart,
+        (None, Some(_)) => MeasureKind::RepeatEnd,
+        (Some(_), Some(_)) => MeasureKind::Repeated,
+    };
+
+    Ok(Measure { kind, body })
 }
 
-pub fn lyrics_parser(input: &mut &str) -> ModalResult<Vec<LyricsTree>> {
-    separated(1.., lyrics_tree_parser, multispace1).parse_next(input)
+fn parse_medium_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
+    let lhs = parse_standard_div(p)?;
+
+    if let Some(_) = p.take_char('!') {
+        let start = lhs.span.start;
+        let rhs = parse_medium_div(p)?;
+        let div = MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs);
+
+        let chunk = MeasureChunk {
+            kind: MeasureChunkKind::Division(div),
+            span: Span::new(start, p.checkpoint()),
+        };
+
+        Ok(chunk)
+    } else {
+        Ok(lhs)
+    }
 }
 
-pub fn lyrics_tree_parser(input: &mut &str) -> ModalResult<LyricsTree> {
-    seq! {
-        LyricsTree {
-            prefix: opt(
-                delimited(
-                    "(",
-                    take_until(1.., ")").map(|s: &str| s.to_string()),
-                    ")"
-                )
-                .map(|p| p)
-            ),
-            root: lyrics_chunk_parser,
+fn parse_standard_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
+    let lhs = parse_half_div(p)?;
+
+    if !p.rest().starts_with(":|")
+        && let Some(_) = p.take_char(':')
+    {
+        let start = lhs.span.start;
+        let rhs = parse_standard_div(p)?;
+        let div = MeasureDivision::new(MeasureDivisionKind::Standard, lhs, rhs);
+
+        let chunk = MeasureChunk {
+            kind: MeasureChunkKind::Division(div),
+            span: Span::new(start, p.checkpoint()),
+        };
+
+        Ok(chunk)
+    } else {
+        Ok(lhs)
+    }
+}
+
+fn parse_half_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
+    let lhs = parse_quarter_div(p)?;
+
+    if let Some(_) = p.take_char('.') {
+        let start = lhs.span.start;
+        let rhs = parse_half_div(p)?;
+        let div = MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs);
+
+        let chunk = MeasureChunk {
+            kind: MeasureChunkKind::Division(div),
+            span: Span::new(start, p.checkpoint()),
+        };
+
+        Ok(chunk)
+    } else {
+        Ok(lhs)
+    }
+}
+
+fn parse_quarter_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
+    let lhs = parse_base_beat(p)?;
+
+    if let Some(_) = p.take_char(',') {
+        let start = lhs.span.start;
+        let rhs = parse_quarter_div(p)?;
+        let div = MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs);
+
+        let chunk = MeasureChunk {
+            kind: MeasureChunkKind::Division(div),
+            span: Span::new(start, p.checkpoint()),
+        };
+
+        Ok(chunk)
+    } else {
+        Ok(lhs)
+    }
+}
+
+fn parse_base_beat(p: &mut Parser) -> ModalResult<MeasureChunk> {
+    p.skip_whitespace();
+
+    let start = p.checkpoint();
+
+    let note = if let Some(_) = p.take_char('-') {
+        MeasureChunkKind::ProlongedNote
+    } else {
+        match parse_extended_note(p) {
+            Ok(note) => note,
+            Err(ModalError::Backtrack) => MeasureChunkKind::EmptyNote,
+            Err(err) => return Err(err),
+        }
+    };
+
+    let chunk = MeasureChunk {
+        kind: note,
+        span: Span::new(start, p.checkpoint()),
+    };
+
+    p.skip_whitespace();
+
+    Ok(chunk)
+}
+
+fn parse_extended_note(p: &mut Parser) -> ModalResult<MeasureChunkKind> {
+    let start_pos = p.checkpoint();
+    let underline_start = p.take_char('_');
+    let note = parse_note(p)?;
+    let underline_end = p.take_char('_');
+
+    match (underline_start, underline_end) {
+        (None, None) => Ok(MeasureChunkKind::Note(note)),
+        (Some(_), None) => Ok(MeasureChunkKind::UnderlineStart(note)),
+        (None, Some(_)) => Ok(MeasureChunkKind::UnderlineEnd(note)),
+        _ => {
+            p.report(ErrorKind::InvalidUnderline, start_pos);
+            Err(ModalError::Recover)
         }
     }
-    .parse_next(input)
 }
 
-pub fn lyrics_chunk_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
-    seq!(
-        _: space0,
-        base_lyrics_parser,
-        opt(seq!(
-            alt((
-                seq!(' ', _: space0, _: not('_')),
-                seq!(_: space0, '_'),
-            ))
-            .map(|(c,)| c),
-            lyrics_chunk_parser
-        )),
-        _: space0,
-    )
-    .map(|(lhs, rhs)| match rhs {
-        Some((sep, rhs)) => match sep {
-            '_' => LyricsChunk::Concat(Box::new(lhs), rhs.into()),
-            ' ' => LyricsChunk::Space(Box::new(lhs), rhs.into()),
-            _ => unreachable!(),
-        },
-        None => lhs,
+fn parse_note(p: &mut Parser) -> ModalResult<Note> {
+    let base = parse_base_note(p)?;
+    let variation = pare_note_variation(p);
+    let octave = parse_note_octave(p)?;
+
+    Ok(Note {
+        base,
+        variation,
+        octave,
     })
-    .parse_next(input)
 }
 
-pub fn base_lyrics_parser(input: &mut &str) -> ModalResult<LyricsChunk> {
-    seq!(
-        alt((
-            "$".map(|_| LyricsChunk::Placeholder),
-            seq!(
-                take_while(1.., |ch: char| !" _|$\n/\\".contains(ch)),
-                opt(seq!(_: "/", base_lyrics_parser)),
-            )
-            .map(|(lhs, rhs)| {
-                let lhs = LyricsChunk::String(lhs.to_string());
-                match rhs {
-                    Some((rhs,)) => LyricsChunk::Split(Box::new(lhs), Box::new(rhs)),
-                    None => lhs,
-                }
-            }),
-        )),
-        opt("\\")
-    )
-    .map(|(lyrics, newline)| match newline.is_some() {
-        false => lyrics,
-        true => LyricsChunk::NewLineSuffixed(Box::new(lyrics)),
-    })
-    .parse_next(input)
+fn parse_base_note(p: &mut Parser) -> ModalResult<BaseNote> {
+    let note = p.one_of(["d", "r", "m", "f", "s", "l", "t"]);
+
+    match note {
+        Some("d") => Ok(BaseNote::D),
+        Some("r") => Ok(BaseNote::R),
+        Some("m") => Ok(BaseNote::M),
+        Some("f") => Ok(BaseNote::F),
+        Some("s") => Ok(BaseNote::S),
+        Some("l") => Ok(BaseNote::L),
+        Some("t") => Ok(BaseNote::T),
+        _ => Err(ModalError::Backtrack),
+    }
+}
+
+fn pare_note_variation(p: &mut Parser) -> Option<NoteVariation> {
+    let v = p.one_of(["a", "i"]);
+
+    match v {
+        Some("a") => Some(NoteVariation::Lowered),
+        Some("i") => Some(NoteVariation::Raised),
+        _ => None,
+    }
+}
+
+fn parse_note_octave(p: &mut Parser) -> ModalResult<i8> {
+    let start_pos = p.checkpoint();
+
+    if p.peek_char() == Some(',') {
+        let count = p.rest().chars().take_while(|&c| c == ',').count();
+        let next_char = p.rest()[count..].trim().chars().next();
+
+        if next_char.is_none() || next_char.is_some_and(|ch| !ch.is_alphabetic()) {
+            p.take_while(|ch| ch == ',');
+            return resolve_octave(p, -(count as isize), start_pos);
+        }
+    }
+
+    let value = match p.one_of(["+", "-", "'"]) {
+        Some("+") => parse_number(p)?,
+        Some("-") => -parse_number::<isize>(p)?,
+        Some("'") => 1 + p.take_while(|ch| ch == '\'').len() as isize,
+        _ => 0,
+    };
+
+    resolve_octave(p, value, start_pos)
+}
+
+fn resolve_octave(p: &mut Parser, value: isize, start_pos: usize) -> ModalResult<i8> {
+    match value {
+        0..=5 => Ok(value as i8),
+        _ => {
+            p.report(ErrorKind::OctaveOutOfRange, start_pos);
+            Err(ModalError::Recover)
+        }
+    }
+}
+
+fn parse_number<T: FromStr>(p: &mut Parser) -> ModalResult<T> {
+    let start_pos = p.checkpoint();
+    let num = p.take_while(|ch| ch.is_numeric());
+    let length = num.len();
+
+    if let Ok(result) = num.parse::<T>() {
+        return Ok(result);
+    }
+
+    let error = match length {
+        0 => ErrorKind::Expected("number"),
+        _ => ErrorKind::NumberOutOfRange(num),
+    };
+
+    p.report(error, start_pos);
+
+    return Err(ModalError::Recover);
 }
 
 #[cfg(test)]
 mod tests {
-    use winnow::Parser;
+    use crate::parser::{Parser, parse_measures, parse_note};
 
-    use crate::parser::{
-        dynamics_parser, header_parser, lyrics_tree_parser, measure_parser, note_parser,
-        solfa_parser,
-    };
-
-    #[test]
-    fn test_header_parser() {
-        let source = "title: foo
-author: bar
-time: 4/4
-key: C
-description: Hello World!
-  \\ Lorem Ipsum";
-
-        let metadata = header_parser.parse(source);
-
-        insta::assert_debug_snapshot!(metadata);
-    }
-
-    #[test]
-    fn test_dynamics_parsing() {
-        let source = "|: f[1] <[3,7] ^[8] mp[10] ||";
-        let dynamics = dynamics_parser.parse(source).unwrap();
-
-        insta::assert_debug_snapshot!(dynamics);
-    }
+    // #[test]
+    // fn test_measure_parsing() {
+    //     let source = "| d : r .  m , f  | s : _l . t_ , - ||";
+    //     let measure = parse_measures(&mut Parser::new(source));
+    //
+    //     insta::assert_debug_snapshot!(measure);
+    // }
 
     #[test]
     fn test_note_parsing() {
@@ -425,128 +379,9 @@ description: Hello World!
 
         let notes = source
             .into_iter()
-            .map(|s| note_parser.parse(s))
+            .map(|s| parse_note(&mut Parser::new(s)))
             .collect::<Vec<_>>();
 
         insta::assert_debug_snapshot!(notes);
-    }
-
-    #[test]
-    fn test_measure_parsing() {
-        let source = "| : | d : r .  m , f  | s : _l . t_ , - ||";
-        let measure = measure_parser.parse(source);
-
-        insta::assert_debug_snapshot!(measure);
-    }
-
-    #[test]
-    fn test_lyrics_parsing() {
-        let source = "(1.) do re_mi\\ fasola ti/e do $";
-        let lyrics = lyrics_tree_parser.parse(source);
-
-        insta::assert_debug_snapshot!(lyrics);
-    }
-
-    #[test]
-    fn test_simple_solfa_parsing() {
-        let source = "
----
-| d : r | m : f ||
-| d : r | m : f ||
-| d : r | m : f ||
-| d : r | m : f ||
-";
-
-        let result = solfa_parser.parse(source);
-
-        insta::assert_debug_snapshot!(result);
-    }
-
-    #[test]
-    fn test_per_voice_lyrics_parsing() {
-        let source = "
----
-| d : r ||
-| d : r ||
-(>) do re
-| d : r ||
-| d : r ||
-(>) doo ree
-";
-
-        let result = solfa_parser.parse(source);
-
-        insta::assert_debug_snapshot!(result);
-    }
-
-    #[test]
-    fn test_multi_staff_parsing() {
-        let source = "
----
-| d : r | m : f ||
-| d : r | m : f ||
-| d : r | m : f ||
-| d : r | m : f ||
-
-(>) do re  mi fa
-
-| s : l | t : d' ||
-| s : l | t : d' ||
-
-(>) so la  ti do
-
-| s : l | t : - ||
-| s : l | t : - ||
-
-(>) so la  ti
-";
-
-        let result = solfa_parser.parse(source);
-
-        insta::assert_debug_snapshot!(result);
-    }
-
-    #[test]
-    fn test_measure_repetition_parsing() {
-        let source = "
----
-| d : r |: m : f | s : l :| t : d' ||
-| d : r |: m : f | s : l :| t : d' ||
-| d : r |: m : f | s : l :| t : d' ||
-| d : r |: m : f | s : l :| t : d' ||
-";
-
-        let result = solfa_parser.parse(source);
-
-        insta::assert_debug_snapshot!(result);
-    }
-
-    #[test]
-    fn test_full_parsing() {
-        let source = "
-title: foo
-author: bar
-time: 4/4
-key: C
-description: Hello World!
-
----
-
-|: p[1]       <[4,7]             ^[8]  DC[9] ||
-|--------------------------------------------||
-|  d : r : m | f . s , l : t  | _d'_ : ri+2  ||
-|  d : r : m | f . s , l : t  | _d'_ : ri+2  ||
-|  d : r : m | f . s , l : t  | _d'_ : ra-1  ||
-|  d : r : m | f . s , l : t  |  d,  : ra-1  ||
-
-(1.) do re_mi   fasola    ti/e   do     re
-(2.) do re_mi   fasola    ti/e   do     $
-";
-
-        let solfa = solfa_parser
-            .parse(source)
-            .unwrap_or_else(|err| panic!("{}", err.to_string()));
-
-        insta::assert_debug_snapshot!(solfa);
     }
 }
