@@ -1,0 +1,231 @@
+---
+source: solfaml-parser/src/parser.rs
+assertion_line: 391
+expression: measure
+---
+Ok(
+    [
+        Measure {
+            kind: Normal,
+            body: MeasureChunk {
+                kind: Division(
+                    MeasureDivision {
+                        lhs: MeasureChunk {
+                            kind: EmptyNote,
+                            span: Span {
+                                start: 2,
+                                end: 2,
+                            },
+                        },
+                        rhs: MeasureChunk {
+                            kind: Division(
+                                MeasureDivision {
+                                    lhs: MeasureChunk {
+                                        kind: EmptyNote,
+                                        span: Span {
+                                            start: 4,
+                                            end: 4,
+                                        },
+                                    },
+                                    rhs: MeasureChunk {
+                                        kind: Note(
+                                            Note {
+                                                base: D,
+                                                variation: None,
+                                                octave: 0,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 5,
+                                            end: 6,
+                                        },
+                                    },
+                                    kind: Half,
+                                },
+                            ),
+                            span: Span {
+                                start: 4,
+                                end: 7,
+                            },
+                        },
+                        kind: Standard,
+                    },
+                ),
+                span: Span {
+                    start: 2,
+                    end: 7,
+                },
+            },
+        },
+        Measure {
+            kind: Normal,
+            body: MeasureChunk {
+                kind: Division(
+                    MeasureDivision {
+                        lhs: MeasureChunk {
+                            kind: Note(
+                                Note {
+                                    base: D,
+                                    variation: None,
+                                    octave: 0,
+                                },
+                            ),
+                            span: Span {
+                                start: 9,
+                                end: 10,
+                            },
+                        },
+                        rhs: MeasureChunk {
+                            kind: Division(
+                                MeasureDivision {
+                                    lhs: MeasureChunk {
+                                        kind: Note(
+                                            Note {
+                                                base: R,
+                                                variation: None,
+                                                octave: 0,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 13,
+                                            end: 14,
+                                        },
+                                    },
+                                    rhs: MeasureChunk {
+                                        kind: Division(
+                                            MeasureDivision {
+                                                lhs: MeasureChunk {
+                                                    kind: Note(
+                                                        Note {
+                                                            base: M,
+                                                            variation: None,
+                                                            octave: 0,
+                                                        },
+                                                    ),
+                                                    span: Span {
+                                                        start: 18,
+                                                        end: 19,
+                                                    },
+                                                },
+                                                rhs: MeasureChunk {
+                                                    kind: Note(
+                                                        Note {
+                                                            base: F,
+                                                            variation: None,
+                                                            octave: 0,
+                                                        },
+                                                    ),
+                                                    span: Span {
+                                                        start: 22,
+                                                        end: 23,
+                                                    },
+                                                },
+                                                kind: Quarter,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 18,
+                                            end: 25,
+                                        },
+                                    },
+                                    kind: Half,
+                                },
+                            ),
+                            span: Span {
+                                start: 13,
+                                end: 25,
+                            },
+                        },
+                        kind: Standard,
+                    },
+                ),
+                span: Span {
+                    start: 9,
+                    end: 25,
+                },
+            },
+        },
+        Measure {
+            kind: Normal,
+            body: MeasureChunk {
+                kind: Division(
+                    MeasureDivision {
+                        lhs: MeasureChunk {
+                            kind: Note(
+                                Note {
+                                    base: S,
+                                    variation: None,
+                                    octave: 0,
+                                },
+                            ),
+                            span: Span {
+                                start: 27,
+                                end: 28,
+                            },
+                        },
+                        rhs: MeasureChunk {
+                            kind: Division(
+                                MeasureDivision {
+                                    lhs: MeasureChunk {
+                                        kind: UnderlineStart(
+                                            Note {
+                                                base: L,
+                                                variation: None,
+                                                octave: 0,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 31,
+                                            end: 33,
+                                        },
+                                    },
+                                    rhs: MeasureChunk {
+                                        kind: Division(
+                                            MeasureDivision {
+                                                lhs: MeasureChunk {
+                                                    kind: UnderlineEnd(
+                                                        Note {
+                                                            base: T,
+                                                            variation: None,
+                                                            octave: 0,
+                                                        },
+                                                    ),
+                                                    span: Span {
+                                                        start: 36,
+                                                        end: 38,
+                                                    },
+                                                },
+                                                rhs: MeasureChunk {
+                                                    kind: ProlongedNote,
+                                                    span: Span {
+                                                        start: 41,
+                                                        end: 42,
+                                                    },
+                                                },
+                                                kind: Quarter,
+                                            },
+                                        ),
+                                        span: Span {
+                                            start: 36,
+                                            end: 43,
+                                        },
+                                    },
+                                    kind: Half,
+                                },
+                            ),
+                            span: Span {
+                                start: 31,
+                                end: 43,
+                            },
+                        },
+                        kind: Standard,
+                    },
+                ),
+                span: Span {
+                    start: 27,
+                    end: 43,
+                },
+            },
+        },
+    ],
+)

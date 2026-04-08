@@ -1,8 +1,10 @@
+use std::ops::{Bound, RangeBounds};
+
 use crate::source::Span;
 
 #[derive(Debug, Clone)]
 pub enum ErrorKind {
-    Expected(&'static str),
+    Expected(String),
     UnexpectedChar(char),
     UnexpectedEOF,
     NumberOutOfRange(String),
@@ -23,6 +25,28 @@ impl std::fmt::Display for ErrorKind {
     }
 }
 
+impl ErrorKind {
+    pub fn expected(msg: &str) -> Self {
+        Self::Expected(msg.to_string())
+    }
+
+    pub fn expected_bounds<B: RangeBounds<usize>>(bounds: B) -> Self {
+        let min = match bounds.start_bound() {
+            Bound::Included(n) => n.to_string(),
+            Bound::Excluded(n) => (n + 1).to_string(),
+            Bound::Unbounded => "0".to_string(),
+        };
+
+        let msg = match bounds.end_bound() {
+            Bound::Included(n) => format!("between {} and {} items", min, n),
+            Bound::Excluded(n) => format!("between {} and {} items", min, n - 1),
+            Bound::Unbounded => format!("at least {} items", min),
+        };
+
+        Self::Expected(msg)
+    }
+}
+
 #[derive(Debug)]
 pub struct ParseError {
     pub span: Span,
@@ -33,6 +57,7 @@ pub struct ParseError {
 pub enum ModalError {
     Recover,
     Backtrack,
+    Cut,
 }
 
 pub type ModalResult<T> = std::result::Result<T, ModalError>;

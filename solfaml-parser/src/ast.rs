@@ -263,6 +263,7 @@ pub enum MeasureChunkKind {
     EmptyNote,
     ProlongedNote,
     Note(Note),
+    NoteGroup(Vec<Note>),
     Division(MeasureDivision),
     UnderlineStart(Note),
     UnderlineEnd(Note),

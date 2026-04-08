@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops::RangeBounds, str::FromStr};
 
 use crate::{
     ast::*,
@@ -91,28 +91,53 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn parse_separated<T>(
+fn parse_separated<S, T>(
     p: &mut Parser,
-    sep: char,
+    bounds: impl RangeBounds<usize>,
+    mut sep_fn: impl FnMut(&mut Parser) -> ModalResult<S>,
     mut parser_fn: impl FnMut(&mut Parser) -> ModalResult<T>,
 ) -> ModalResult<Vec<T>> {
     let mut items = Vec::new();
+    let start_pos = p.checkpoint();
 
     loop {
         match parser_fn(p) {
             Ok(item) => items.push(item),
             Err(ModalError::Recover) => {
-                p.take_while(|ch| ch != sep);
+                while let Some(next) = p.peek_char() {
+                    match sep_fn(p) {
+                        Ok(_) => continue,
+                        Err(ModalError::Cut) => break,
+                        Err(_) => p.take_char(next),
+                    };
+                }
             }
             Err(e) => return Err(e),
         }
 
-        if p.is_eof() || p.take_char(sep).is_none() {
+        if p.is_eof() || sep_fn(p).is_err() {
             break;
         }
     }
 
-    Ok(items)
+    if bounds.contains(&items.len()) {
+        Ok(items)
+    } else {
+        p.report(ErrorKind::expected_bounds(bounds), start_pos);
+
+        Err(ModalError::Recover)
+    }
+}
+
+fn measure_sep(p: &mut Parser) -> ModalResult<()> {
+    if p.rest().starts_with("||") || p.rest().starts_with('\n') {
+        return Err(ModalError::Cut);
+    }
+
+    match p.take_char('|') {
+        Some(_) => Ok(()),
+        _ => Err(ModalError::Recover),
+    }
 }
 
 fn parse_measures(p: &mut Parser) -> ModalResult<Vec<Measure>> {
@@ -120,15 +145,15 @@ fn parse_measures(p: &mut Parser) -> ModalResult<Vec<Measure>> {
     p.take_char('|');
 
     let start = p.checkpoint();
-    let measures = parse_separated(p, '|', parse_base_measure)?;
+    let measures = parse_separated(p, .., measure_sep, parse_base_measure)?;
 
     if measures.is_empty() {
-        p.report(ErrorKind::Expected("at least one measure"), start);
+        p.report(ErrorKind::expected("at least one measure"), start);
         return Err(ModalError::Recover);
     }
 
     if p.one_of(["||", "|"]).is_none() {
-        p.report(ErrorKind::Expected("`|` or `||`"), p.checkpoint());
+        p.report(ErrorKind::expected("`|` or `||`"), p.checkpoint());
     }
 
     Ok(measures)
@@ -282,9 +307,7 @@ fn parse_note(p: &mut Parser) -> ModalResult<Note> {
 }
 
 fn parse_base_note(p: &mut Parser) -> ModalResult<BaseNote> {
-    let note = p.one_of(["d", "r", "m", "f", "s", "l", "t"]);
-
-    match note {
+    match p.one_of(["d", "r", "m", "f", "s", "l", "t"]) {
         Some("d") => Ok(BaseNote::D),
         Some("r") => Ok(BaseNote::R),
         Some("m") => Ok(BaseNote::M),
@@ -297,9 +320,7 @@ fn parse_base_note(p: &mut Parser) -> ModalResult<BaseNote> {
 }
 
 fn pare_note_variation(p: &mut Parser) -> Option<NoteVariation> {
-    let v = p.one_of(["a", "i"]);
-
-    match v {
+    match p.one_of(["a", "i"]) {
         Some("a") => Some(NoteVariation::Lowered),
         Some("i") => Some(NoteVariation::Raised),
         _ => None,
@@ -331,7 +352,7 @@ fn parse_note_octave(p: &mut Parser) -> ModalResult<i8> {
 
 fn resolve_octave(p: &mut Parser, value: isize, start_pos: usize) -> ModalResult<i8> {
     match value {
-        0..=5 => Ok(value as i8),
+        -5..=5 => Ok(value as i8),
         _ => {
             p.report(ErrorKind::OctaveOutOfRange, start_pos);
             Err(ModalError::Recover)
@@ -349,7 +370,7 @@ fn parse_number<T: FromStr>(p: &mut Parser) -> ModalResult<T> {
     }
 
     let error = match length {
-        0 => ErrorKind::Expected("number"),
+        0 => ErrorKind::expected("number"),
         _ => ErrorKind::NumberOutOfRange(num),
     };
 
@@ -362,13 +383,13 @@ fn parse_number<T: FromStr>(p: &mut Parser) -> ModalResult<T> {
 mod tests {
     use crate::parser::{Parser, parse_measures, parse_note};
 
-    // #[test]
-    // fn test_measure_parsing() {
-    //     let source = "| d : r .  m , f  | s : _l . t_ , - ||";
-    //     let measure = parse_measures(&mut Parser::new(source));
-    //
-    //     insta::assert_debug_snapshot!(measure);
-    // }
+    #[test]
+    fn text_measure_parsing() {
+        let source = "| : .d | d : r .  m , f  | s : _l . t_ , - ||";
+        let measure = parse_measures(&mut Parser::new(source));
+
+        insta::assert_debug_snapshot!(measure);
+    }
 
     #[test]
     fn test_note_parsing() {

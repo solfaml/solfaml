@@ -1,0 +1,152 @@
+---
+source: solfaml-parser/src/parser.rs
+assertion_line: 406
+expression: notes
+---
+[
+    Ok(
+        Note {
+            base: D,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: R,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: M,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: F,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: S,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: L,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: T,
+            variation: None,
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: D,
+            variation: None,
+            octave: 1,
+        },
+    ),
+    Ok(
+        Note {
+            base: R,
+            variation: None,
+            octave: -1,
+        },
+    ),
+    Ok(
+        Note {
+            base: M,
+            variation: None,
+            octave: 2,
+        },
+    ),
+    Ok(
+        Note {
+            base: F,
+            variation: None,
+            octave: -2,
+        },
+    ),
+    Ok(
+        Note {
+            base: T,
+            variation: Some(
+                Raised,
+            ),
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: D,
+            variation: Some(
+                Lowered,
+            ),
+            octave: 0,
+        },
+    ),
+    Ok(
+        Note {
+            base: R,
+            variation: Some(
+                Raised,
+            ),
+            octave: 1,
+        },
+    ),
+    Ok(
+        Note {
+            base: M,
+            variation: Some(
+                Lowered,
+            ),
+            octave: -1,
+        },
+    ),
+    Ok(
+        Note {
+            base: S,
+            variation: Some(
+                Raised,
+            ),
+            octave: 1,
+        },
+    ),
+    Ok(
+        Note {
+            base: R,
+            variation: Some(
+                Lowered,
+            ),
+            octave: -3,
+        },
+    ),
+    Ok(
+        Note {
+            base: D,
+            variation: None,
+            octave: -2,
+        },
+    ),
+    Ok(
+        Note {
+            base: R,
+            variation: None,
+            octave: 2,
+        },
+    ),
+]
