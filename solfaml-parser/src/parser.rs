@@ -3,7 +3,7 @@ use std::{ops::RangeBounds, str::FromStr};
 use crate::{
     ast::*,
     error::{ErrorKind, ModalError, ModalResult, ParseError},
-    source::{SourceMap, Span},
+    source::Span,
 };
 
 #[derive(Debug)]
@@ -24,6 +24,10 @@ impl<'a> Parser<'a> {
 
     fn checkpoint(&self) -> usize {
         self.position
+    }
+
+    fn reset(&mut self, position: usize) {
+        self.position = position;
     }
 
     fn rest(&self) -> &str {
@@ -70,6 +74,11 @@ impl<'a> Parser<'a> {
         self.take_while(char::is_whitespace);
     }
 
+    fn recover_with_default<T: Default>(&mut self, symbol: char) -> T {
+        self.take_while(|ch| ch != symbol);
+        T::default()
+    }
+
     fn one_of<I>(&mut self, choices: I) -> Option<&str>
     where
         I: IntoIterator<Item = &'static str>,
@@ -91,31 +100,38 @@ impl<'a> Parser<'a> {
     }
 }
 
-fn parse_separated<S, T>(
+fn parse_separated<S, T: std::fmt::Debug>(
     p: &mut Parser,
     bounds: impl RangeBounds<usize>,
     mut sep_fn: impl FnMut(&mut Parser) -> ModalResult<S>,
     mut parser_fn: impl FnMut(&mut Parser) -> ModalResult<T>,
 ) -> ModalResult<Vec<T>> {
     let mut items = Vec::new();
+    let mut checkpoint = p.checkpoint();
     let start_pos = p.checkpoint();
 
-    loop {
+    'outer: loop {
         match parser_fn(p) {
-            Ok(item) => items.push(item),
+            Ok(item) => {
+                items.push(item);
+                checkpoint = p.checkpoint();
+            }
             Err(ModalError::Recover) => {
                 while let Some(next) = p.peek_char() {
                     match sep_fn(p) {
-                        Ok(_) => continue,
+                        Ok(_) => continue 'outer,
                         Err(ModalError::Cut) => break,
                         Err(_) => p.take_char(next),
                     };
                 }
             }
-            Err(e) => return Err(e),
+            Err(_) => {
+                p.reset(checkpoint);
+                break;
+            }
         }
 
-        if p.is_eof() || sep_fn(p).is_err() {
+        if sep_fn(p).is_err() || p.is_eof() {
             break;
         }
     }
@@ -124,7 +140,6 @@ fn parse_separated<S, T>(
         Ok(items)
     } else {
         p.report(ErrorKind::expected_bounds(bounds), start_pos);
-
         Err(ModalError::Recover)
     }
 }
@@ -136,13 +151,110 @@ fn measure_sep(p: &mut Parser) -> ModalResult<()> {
 
     match p.take_char('|') {
         Some(_) => Ok(()),
-        _ => Err(ModalError::Recover),
+        _ => Err(ModalError::Cut),
     }
+}
+
+fn multiline_sep(p: &mut Parser) -> ModalResult<()> {
+    match p.take_while(char::is_whitespace).contains('\n') {
+        true => Ok(()),
+        false => Err(ModalError::Cut),
+    }
+}
+
+fn parse_solfa(p: &mut Parser) -> ModalResult<Solfa> {
+    p.skip_multispace();
+
+    let staffs = parse_separated(p, 1.., multiline_sep, parse_staff)?;
+
+    p.skip_multispace();
+
+    Ok(Solfa { staffs })
+}
+
+fn parse_staff(p: &mut Parser) -> ModalResult<Staff> {
+    let dynamics = parse_dynamics(p).unwrap_or_else(|_| p.recover_with_default('\n'));
+    let lines = parse_separated(p, 4..=4, multiline_sep, parse_staff_line)?;
+
+    Ok(Staff::new(dynamics, lines))
+}
+
+fn parse_dynamics(p: &mut Parser) -> ModalResult<Vec<Dynamic>> {
+    if p.one_of(["|!"]).is_none() {
+        return Ok(Vec::new());
+    }
+
+    p.skip_whitespace();
+
+    let dynamics = parse_separated(
+        p,
+        ..,
+        |p| {
+            p.skip_whitespace();
+            Ok(())
+        },
+        parse_base_dynamic,
+    );
+
+    if p.one_of(["||", "|"]).is_none() {
+        p.report(ErrorKind::expected("`|` or `||`"), p.checkpoint());
+    }
+
+    dynamics
+}
+
+fn parse_base_dynamic(p: &mut Parser) -> ModalResult<Dynamic> {
+    let start_pos = p.checkpoint();
+
+    let d = p.one_of([
+        "fff", "ff", "f", "mf", "mp", "ppp", "pp", "p", "DC", "DS", "$", "^", "<<", "<", ">>", ">",
+    ]);
+
+    let kind = match d {
+        Some("DC") => DynamicKind::DC,
+        Some("DS") => DynamicKind::DS,
+        Some("$") => DynamicKind::Sign,
+        Some("^") => DynamicKind::Accent,
+        Some("<") => DynamicKind::CrescendoStart,
+        Some(">") => DynamicKind::DecrescendoStart,
+        Some("<<") => DynamicKind::CrescendoEnd,
+        Some(">>") => DynamicKind::DecrescendoEnd,
+        Some("fff") => DynamicKind::Level(DynamicLevel::FFF),
+        Some("ff") => DynamicKind::Level(DynamicLevel::FF),
+        Some("f") => DynamicKind::Level(DynamicLevel::F),
+        Some("mf") => DynamicKind::Level(DynamicLevel::MF),
+        Some("mp") => DynamicKind::Level(DynamicLevel::MP),
+        Some("p") => DynamicKind::Level(DynamicLevel::P),
+        Some("pp") => DynamicKind::Level(DynamicLevel::PP),
+        Some("ppp") => DynamicKind::Level(DynamicLevel::PPP),
+        _ => return Err(ModalError::Cut),
+    };
+
+    Ok(Dynamic {
+        kind,
+        span: Span::new(start_pos, p.checkpoint()),
+    })
+}
+
+fn parse_staff_line(p: &mut Parser) -> ModalResult<StaffLinePartial> {
+    let measures = parse_measures(p).unwrap_or_else(|_| p.recover_with_default('\n'));
+
+    let lyrics = if p.rest().trim_start().starts_with("|") {
+        None
+    } else {
+        p.skip_multispace();
+        parse_lyrics_lines(p).ok()
+    };
+
+    Ok(StaffLinePartial { measures, lyrics })
 }
 
 fn parse_measures(p: &mut Parser) -> ModalResult<Vec<Measure>> {
     p.skip_multispace();
-    p.take_char('|');
+
+    if p.one_of(["||", "|"]).is_none() {
+        p.report(ErrorKind::expected("`|` or `||`"), p.checkpoint());
+    }
 
     let start = p.checkpoint();
     let measures = parse_separated(p, .., measure_sep, parse_base_measure)?;
@@ -177,35 +289,33 @@ fn parse_base_measure(p: &mut Parser) -> ModalResult<Measure> {
 fn parse_medium_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
     let lhs = parse_standard_div(p)?;
 
-    if let Some(_) = p.take_char('!') {
-        let start = lhs.span.start;
-        let rhs = parse_medium_div(p)?;
-        let div = MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs);
+    if p.take_char('!').is_none() {
+        return Ok(lhs);
+    };
 
-        let chunk = MeasureChunk {
-            kind: MeasureChunkKind::Division(div),
-            span: Span::new(start, p.checkpoint()),
-        };
+    let start_pos = lhs.span.start;
+    let rhs = parse_medium_div(p)?;
+    let div = MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs);
 
-        Ok(chunk)
-    } else {
-        Ok(lhs)
-    }
+    let chunk = MeasureChunk {
+        kind: MeasureChunkKind::Division(div),
+        span: Span::new(start_pos, p.checkpoint()),
+    };
+
+    Ok(chunk)
 }
 
 fn parse_standard_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
     let lhs = parse_half_div(p)?;
 
-    if !p.rest().starts_with(":|")
-        && let Some(_) = p.take_char(':')
-    {
-        let start = lhs.span.start;
+    if !p.rest().starts_with(":|") && p.take_char(':').is_some() {
+        let start_pos = lhs.span.start;
         let rhs = parse_standard_div(p)?;
         let div = MeasureDivision::new(MeasureDivisionKind::Standard, lhs, rhs);
 
         let chunk = MeasureChunk {
             kind: MeasureChunkKind::Division(div),
-            span: Span::new(start, p.checkpoint()),
+            span: Span::new(start_pos, p.checkpoint()),
         };
 
         Ok(chunk)
@@ -217,39 +327,39 @@ fn parse_standard_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
 fn parse_half_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
     let lhs = parse_quarter_div(p)?;
 
-    if let Some(_) = p.take_char('.') {
-        let start = lhs.span.start;
-        let rhs = parse_half_div(p)?;
-        let div = MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs);
+    if p.take_char('.').is_none() {
+        return Ok(lhs);
+    };
 
-        let chunk = MeasureChunk {
-            kind: MeasureChunkKind::Division(div),
-            span: Span::new(start, p.checkpoint()),
-        };
+    let start_pos = lhs.span.start;
+    let rhs = parse_half_div(p)?;
+    let div = MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs);
 
-        Ok(chunk)
-    } else {
-        Ok(lhs)
-    }
+    let chunk = MeasureChunk {
+        kind: MeasureChunkKind::Division(div),
+        span: Span::new(start_pos, p.checkpoint()),
+    };
+
+    Ok(chunk)
 }
 
 fn parse_quarter_div(p: &mut Parser) -> ModalResult<MeasureChunk> {
     let lhs = parse_base_beat(p)?;
 
-    if let Some(_) = p.take_char(',') {
-        let start = lhs.span.start;
-        let rhs = parse_quarter_div(p)?;
-        let div = MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs);
+    if p.take_char(',').is_none() {
+        return Ok(lhs);
+    };
 
-        let chunk = MeasureChunk {
-            kind: MeasureChunkKind::Division(div),
-            span: Span::new(start, p.checkpoint()),
-        };
+    let start_pos = lhs.span.start;
+    let rhs = parse_quarter_div(p)?;
+    let div = MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs);
 
-        Ok(chunk)
-    } else {
-        Ok(lhs)
-    }
+    let chunk = MeasureChunk {
+        kind: MeasureChunkKind::Division(div),
+        span: Span::new(start_pos, p.checkpoint()),
+    };
+
+    Ok(chunk)
 }
 
 fn parse_base_beat(p: &mut Parser) -> ModalResult<MeasureChunk> {
@@ -257,7 +367,7 @@ fn parse_base_beat(p: &mut Parser) -> ModalResult<MeasureChunk> {
 
     let start = p.checkpoint();
 
-    let note = if let Some(_) = p.take_char('-') {
+    let note = if p.take_char('-').is_some() {
         MeasureChunkKind::ProlongedNote
     } else {
         match parse_extended_note(p) {
@@ -379,30 +489,165 @@ fn parse_number<T: FromStr>(p: &mut Parser) -> ModalResult<T> {
     return Err(ModalError::Recover);
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::parser::{Parser, parse_measures, parse_note};
+fn parse_lyrics_lines(p: &mut Parser) -> ModalResult<Vec<LyricsTree>> {
+    return parse_separated(p, 1.., multiline_sep, parse_lyrics_tree);
+}
 
-    #[test]
-    fn text_measure_parsing() {
-        let source = "| : .d | d : r .  m , f  | s : _l . t_ , - ||";
-        let measure = parse_measures(&mut Parser::new(source));
+fn parse_lyrics_tree(p: &mut Parser) -> ModalResult<LyricsTree> {
+    let mut prefix = None;
 
-        insta::assert_debug_snapshot!(measure);
+    if p.take_char('(').is_some() {
+        let start_pos = p.checkpoint();
+        let value = p.take_while(|ch| ch != ')' && ch != '\n');
+        let span = Span::new(start_pos, p.checkpoint());
+
+        prefix = Some(LyricsPrefix { value, span });
+
+        if p.take_char(')').is_none() {
+            p.report(ErrorKind::expected("`)`"), p.checkpoint());
+            return Err(ModalError::Recover);
+        }
     }
 
+    let root = parse_lyrics_break(p)?;
+
+    Ok(LyricsTree { prefix, root })
+}
+
+fn parse_lyrics_break(p: &mut Parser) -> ModalResult<LyricsChunk> {
+    let lhs = parse_lyrics_join(p)?;
+
+    p.skip_whitespace();
+
+    if p.take_char('\\').is_none() {
+        return Ok(lhs);
+    };
+
+    if let Ok(rhs) = parse_lyrics_break(p) {
+        Ok(LyricsChunk {
+            span: Span::new(lhs.span.start, p.checkpoint()),
+            kind: LyricsChunkKind::LineBreak(lhs.into(), rhs.into()),
+        })
+    } else {
+        p.report(ErrorKind::expected("right-handed side"), p.checkpoint());
+        Err(ModalError::Recover)
+    }
+}
+
+fn parse_lyrics_join(p: &mut Parser) -> ModalResult<LyricsChunk> {
+    p.skip_whitespace();
+
+    let lhs = parse_lyrics_split(p)?;
+    let trimmed = p.rest().trim_start();
+
+    let constructor = if trimmed.starts_with('_') {
+        p.skip_whitespace();
+        p.take_char('_');
+        LyricsChunkKind::Concat
+    } else if p.rest().starts_with(' ') && !trimmed.starts_with('\\') {
+        p.take_char(' ');
+        LyricsChunkKind::Space
+    } else {
+        return Ok(lhs);
+    };
+
+    if let Ok(rhs) = parse_lyrics_join(p) {
+        Ok(LyricsChunk {
+            span: Span::new(lhs.span.start, p.checkpoint()),
+            kind: constructor(lhs.into(), rhs.into()),
+        })
+    } else {
+        p.report(ErrorKind::expected("right-handed side"), p.checkpoint());
+        Err(ModalError::Recover)
+    }
+}
+
+fn parse_lyrics_split(p: &mut Parser) -> ModalResult<LyricsChunk> {
+    let lhs = parse_lyrics_string(p)?;
+
+    if p.take_char('/').is_none() {
+        return Ok(lhs);
+    };
+
+    if let Ok(rhs) = parse_lyrics_string(p) {
+        Ok(LyricsChunk {
+            span: Span::new(lhs.span.start, p.checkpoint()),
+            kind: LyricsChunkKind::Split(lhs.into(), rhs.into()),
+        })
+    } else {
+        p.report(ErrorKind::expected("right-handed side"), p.checkpoint());
+        Err(ModalError::Recover)
+    }
+}
+
+fn parse_lyrics_string(p: &mut Parser) -> ModalResult<LyricsChunk> {
+    let start_pos = p.checkpoint();
+
+    if p.take_char('$').is_some() {
+        return Ok(LyricsChunk {
+            kind: LyricsChunkKind::Placeholder,
+            span: Span::new(start_pos, p.checkpoint()),
+        });
+    }
+
+    let lyrics = p.take_while(|ch| !" _|$\n/\\".contains(ch));
+
+    if lyrics.is_empty() {
+        Err(ModalError::Backtrack)
+    } else {
+        Ok(LyricsChunk {
+            span: Span::new(start_pos, p.checkpoint()),
+            kind: LyricsChunkKind::String(lyrics),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::{
+        Parser, parse_lyrics_lines, parse_lyrics_tree, parse_measures, parse_note, parse_solfa,
+        parse_staff,
+    };
+
+    // #[test]
+    // fn text_measure_parsing() {
+    //     let source = "| : .d | d : r .  m , f  | s : _l . t_ , - ||";
+    //     let measure = parse_measures(&mut Parser::new(source));
+    //
+    //     insta::assert_debug_snapshot!(measure);
+    // }
+    //
+    // #[test]
+    // fn test_note_parsing() {
+    //     let source = [
+    //         "d", "r", "m", "f", "s", "l", "t", "d'", "r,", "m+2", "f-2", "ti", "da", "ri'", "ma,",
+    //         "si+1", "ra-3", "d,,", "r''",
+    //     ];
+    //
+    //     let notes = source
+    //         .into_iter()
+    //         .map(|s| parse_note(&mut Parser::new(s)))
+    //         .collect::<Vec<_>>();
+    //
+    //     insta::assert_debug_snapshot!(notes);
+    // }
+
     #[test]
-    fn test_note_parsing() {
-        let source = [
-            "d", "r", "m", "f", "s", "l", "t", "d'", "r,", "m+2", "f-2", "ti", "da", "ri'", "ma,",
-            "si+1", "ra-3", "d,,", "r''",
-        ];
+    fn test_simple_solfa_parsing() {
+        let source = "
+| d : r | m : f ||
+| d : r | m : f ||
+| d : r | m : f ||
+| d : r | m : f ||
 
-        let notes = source
-            .into_iter()
-            .map(|s| parse_note(&mut Parser::new(s)))
-            .collect::<Vec<_>>();
+| d : r | m : f ||
+| d : r | m : f ||
+| d : r | m : f ||
+| d : r | m : f ||";
 
-        insta::assert_debug_snapshot!(notes);
+        let mut parser = Parser::new(source);
+        let result = parse_solfa(&mut parser);
+
+        insta::assert_debug_snapshot!(result);
     }
 }

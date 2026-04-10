@@ -3,15 +3,12 @@ use std::{collections::BTreeMap, str::FromStr};
 
 use crate::source::Span;
 
-#[cfg(feature = "wasm")]
-use {tsify::Tsify, wasm_bindgen::prelude::*};
-
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct Solfa {
-//     pub header: Header,
-//     pub staffs: Vec<Staff>,
-// }
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct Solfa {
+    // pub header: Header,
+    pub staffs: Vec<Staff>,
+}
 
 // #[derive(Debug)]
 // pub struct KeyValuePair<T> {
@@ -114,30 +111,39 @@ use {tsify::Tsify, wasm_bindgen::prelude::*};
 //     }
 // }
 
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-// pub enum Dynamic {
-//     DC { pos: u16 },
-//     DS { pos: u16 },
-//     Sign { pos: u16 },
-//     Accent { pos: u16 },
-//     Crescendo { start: u16, end: u16 },
-//     Decrescendo { start: u16, end: u16 },
-//     Level { pos: u16, kind: DynamicLevel },
-// }
-//
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-// pub enum DynamicLevel {
-//     FFF,
-//     FF,
-//     F,
-//     MF,
-//     MP,
-//     P,
-//     PP,
-//     PPP,
-// }
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub struct Dynamic {
+    pub kind: DynamicKind,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum DynamicKind {
+    DC,
+    DS,
+    Sign,
+    Accent,
+    CrescendoStart,
+    DecrescendoStart,
+    CrescendoEnd,
+    DecrescendoEnd,
+    Level(DynamicLevel),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum DynamicLevel {
+    FFF,
+    FF,
+    F,
+    MF,
+    MP,
+    P,
+    PP,
+    PPP,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
@@ -167,18 +173,6 @@ pub struct Note {
     pub octave: i8,
 }
 
-// impl Note {
-//     pub fn with_octave_up(mut self, value: u8) -> Self {
-//         self.octave = Octave::Up(value);
-//         self
-//     }
-//
-//     pub fn with_octave_down(mut self, value: u8) -> Self {
-//         self.octave = Octave::Down(value);
-//         self
-//     }
-// }
-//
 // impl std::fmt::Display for Note {
 //     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 //         let base = format!("{:?}", self.base).to_lowercase();
@@ -201,7 +195,7 @@ pub struct Note {
 //     }
 // }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum MeasureDivisionKind {
     Medium,
@@ -210,7 +204,7 @@ pub enum MeasureDivisionKind {
     Quarter,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct MeasureDivision {
     pub lhs: Box<MeasureChunk>,
@@ -227,14 +221,14 @@ impl MeasureDivision {
         }
     }
 }
-//
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct StaffLine {
-//     pub measures: Vec<Measure>,
-// }
-//
-#[derive(Debug, PartialEq, Serialize)]
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct StaffLine {
+    pub measures: Vec<Measure>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Measure {
     pub kind: MeasureKind,
@@ -250,14 +244,14 @@ pub enum MeasureKind {
     RepeatEnd,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub struct MeasureChunk {
     pub kind: MeasureChunkKind,
     pub span: Span,
 }
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
 pub enum MeasureChunkKind {
     EmptyNote,
@@ -269,87 +263,93 @@ pub enum MeasureChunkKind {
     UnderlineEnd(Note),
 }
 
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct Staff {
-//     pub dynamics: Vec<Dynamic>,
-//     pub lines: Vec<StaffLine>,
-//     pub lyrics: Vec<IndexedLyricsSet>,
-// }
-//
-// impl From<StaffPartial> for Staff {
-//     fn from(value: StaffPartial) -> Self {
-//         let results = value
-//             .lines
-//             .into_iter()
-//             .enumerate()
-//             .map(|(idx, line)| {
-//                 let measures = line.measures;
-//                 let lyrics = line.lyrics.map(|ly| IndexedLyricsSet::from((idx, ly)));
-//                 (measures, lyrics)
-//             })
-//             .collect::<Vec<_>>();
-//
-//         let mut lyrics = Vec::new();
-//         let mut lines = Vec::new();
-//
-//         for (measures, lyrics_set) in results {
-//             lines.push(StaffLine { measures });
-//
-//             if let Some(value) = lyrics_set {
-//                 lyrics.push(value);
-//             }
-//         }
-//
-//         Self {
-//             dynamics: value.dynamics.unwrap_or_default(),
-//             lyrics,
-//             lines,
-//         }
-//     }
-// }
-//
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct StaffLinePartial {
-//     pub measures: Vec<Measure>,
-//     pub lyrics: Option<Vec<LyricsTree>>,
-// }
-//
-// #[derive(Debug, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct StaffPartial {
-//     pub dynamics: Option<Vec<Dynamic>>,
-//     pub lines: Vec<StaffLinePartial>,
-// }
-//
-// #[derive(Debug, Clone, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-// pub enum LyricsChunk {
-//     Placeholder,
-//     String(String),
-//     NewLineSuffixed(Box<LyricsChunk>),
-//     Split(Box<LyricsChunk>, Box<LyricsChunk>),
-//     Space(Box<LyricsChunk>, Box<LyricsChunk>),
-//     Concat(Box<LyricsChunk>, Box<LyricsChunk>),
-// }
-//
-// #[derive(Debug, Clone, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct LyricsTree {
-//     pub prefix: Option<String>,
-//     pub root: LyricsChunk,
-// }
-//
-// #[derive(Debug, Clone, PartialEq, Serialize)]
-// #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-// pub struct IndexedLyricsSet {
-//     pub index: usize,
-//     pub lyrics: Vec<LyricsTree>,
-// }
-//
-// impl From<(usize, Vec<LyricsTree>)> for IndexedLyricsSet {
-//     fn from((index, lyrics): (usize, Vec<LyricsTree>)) -> Self {
-//         Self { index, lyrics }
-//     }
-// }
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct Staff {
+    pub dynamics: Vec<Dynamic>,
+    pub lines: Vec<StaffLine>,
+    pub lyrics: Vec<IndexedLyricsSet>,
+}
+
+impl Staff {
+    pub fn new(dynamics: Vec<Dynamic>, lines: Vec<StaffLinePartial>) -> Self {
+        let results = lines
+            .into_iter()
+            .enumerate()
+            .map(|(idx, line)| {
+                let measures = line.measures;
+                let lyrics = line.lyrics.map(|ly| IndexedLyricsSet::from((idx, ly)));
+                (measures, lyrics)
+            })
+            .collect::<Vec<_>>();
+
+        let mut lyrics = Vec::new();
+        let mut lines = Vec::new();
+
+        for (measures, lyrics_set) in results {
+            lines.push(StaffLine { measures });
+
+            if let Some(value) = lyrics_set {
+                lyrics.push(value);
+            }
+        }
+
+        Self {
+            dynamics,
+            lyrics,
+            lines,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct StaffLinePartial {
+    pub measures: Vec<Measure>,
+    pub lyrics: Option<Vec<LyricsTree>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub struct LyricsChunk {
+    pub kind: LyricsChunkKind,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum LyricsChunkKind {
+    Placeholder,
+    String(String),
+    LineBreak(Box<LyricsChunk>, Box<LyricsChunk>),
+    Split(Box<LyricsChunk>, Box<LyricsChunk>),
+    Space(Box<LyricsChunk>, Box<LyricsChunk>),
+    Concat(Box<LyricsChunk>, Box<LyricsChunk>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct LyricsPrefix {
+    pub value: String,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct LyricsTree {
+    pub prefix: Option<LyricsPrefix>,
+    pub root: LyricsChunk,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
+pub struct IndexedLyricsSet {
+    pub index: usize,
+    pub lyrics: Vec<LyricsTree>,
+}
+
+impl From<(usize, Vec<LyricsTree>)> for IndexedLyricsSet {
+    fn from((index, lyrics): (usize, Vec<LyricsTree>)) -> Self {
+        Self { index, lyrics }
+    }
+}
