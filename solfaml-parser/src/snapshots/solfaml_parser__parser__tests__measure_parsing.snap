@@ -6,99 +6,107 @@ Ok(
     [
         Measure {
             kind: Normal,
-            root: Division(
-                MeasureDivision {
-                    lhs: EmptyNote,
-                    rhs: EmptyNote,
-                    kind: Normal,
-                },
-            ),
+            chunks: [
+                Separation(
+                    Normal,
+                ),
+            ],
         },
         Measure {
             kind: Normal,
-            root: Division(
-                MeasureDivision {
-                    lhs: Note(
+            chunks: [
+                Pulse(
+                    Note(
                         Note {
                             base: D,
                             variant: Base,
                             octave: Base,
                         },
                     ),
-                    rhs: Division(
-                        MeasureDivision {
-                            lhs: Note(
-                                Note {
-                                    base: R,
-                                    variant: Base,
-                                    octave: Base,
-                                },
-                            ),
-                            rhs: Division(
-                                MeasureDivision {
-                                    lhs: Note(
-                                        Note {
-                                            base: M,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: Note(
-                                        Note {
-                                            base: F,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    kind: Quarter,
-                                },
-                            ),
-                            kind: Half,
+                ),
+                Separation(
+                    Normal,
+                ),
+                Pulse(
+                    Note(
+                        Note {
+                            base: R,
+                            variant: Base,
+                            octave: Base,
                         },
                     ),
-                    kind: Normal,
-                },
-            ),
+                ),
+                Division(
+                    Half,
+                ),
+                Pulse(
+                    Note(
+                        Note {
+                            base: M,
+                            variant: Base,
+                            octave: Base,
+                        },
+                    ),
+                ),
+                Division(
+                    Quarter,
+                ),
+                Pulse(
+                    Note(
+                        Note {
+                            base: F,
+                            variant: Base,
+                            octave: Base,
+                        },
+                    ),
+                ),
+            ],
         },
         Measure {
             kind: Normal,
-            root: Division(
-                MeasureDivision {
-                    lhs: Note(
+            chunks: [
+                Pulse(
+                    Note(
                         Note {
                             base: S,
                             variant: Base,
                             octave: Base,
                         },
                     ),
-                    rhs: Division(
-                        MeasureDivision {
-                            lhs: UnderlineStart(
-                                Note {
-                                    base: L,
-                                    variant: Base,
-                                    octave: Base,
-                                },
-                            ),
-                            rhs: Division(
-                                MeasureDivision {
-                                    lhs: UnderlineEnd(
-                                        Note {
-                                            base: T,
-                                            variant: Base,
-                                            octave: Base,
-                                        },
-                                    ),
-                                    rhs: ProlongedNote,
-                                    kind: Quarter,
-                                },
-                            ),
-                            kind: Half,
+                ),
+                Separation(
+                    Normal,
+                ),
+                Underline,
+                Pulse(
+                    Note(
+                        Note {
+                            base: L,
+                            variant: Base,
+                            octave: Base,
                         },
                     ),
-                    kind: Normal,
-                },
-            ),
+                ),
+                Division(
+                    Half,
+                ),
+                Pulse(
+                    Note(
+                        Note {
+                            base: T,
+                            variant: Base,
+                            octave: Base,
+                        },
+                    ),
+                ),
+                Underline,
+                Division(
+                    Quarter,
+                ),
+                Pulse(
+                    ProlongedNote,
+                ),
+            ],
         },
     ],
 )

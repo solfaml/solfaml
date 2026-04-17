@@ -4,7 +4,7 @@ use super::ast::*;
 
 use winnow::{
     ascii::{alphanumeric1, digit1, multispace0, multispace1, space0, space1},
-    combinator::{alt, delimited, not, opt, peek, repeat, separated, seq},
+    combinator::{alt, delimited, eof, not, opt, peek, repeat, separated, seq},
     prelude::*,
     token::{one_of, take_until, take_while},
 };
@@ -163,16 +163,32 @@ pub fn measure_parser(input: &mut &str) -> ModalResult<Vec<Measure>> {
     seq!(
         _: multispace0,
         _: opt("|"),
-        separated(1.., measure_base_parser, "|"),
+        separated(1..,
+            measure_base_parser,
+            measure_separator,
+        ),
         _: alt(("||", "|")),
     )
     .map(|(m,)| m)
     .parse_next(input)
 }
 
+pub fn measure_separator(input: &mut &str) -> ModalResult<()> {
+    seq!(
+        "|",
+        peek(not(alt((
+            "|".void(),
+            seq!(_: space0, _: "\n").void(),
+            eof.void() // <--- Handle EOF here
+        ))))
+    )
+    .void()
+    .parse_next(input)
+}
+
 pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
-    seq!(opt(":"), medium_div_parser, opt(":"),)
-        .map(|(rep_start, root, rep_end)| {
+    seq!(opt(":"), measure_chunks_parser, opt(":"))
+        .map(|(rep_start, chunks, rep_end)| {
             let kind = match (rep_start, rep_end) {
                 (Some(_), Some(_)) => MeasureKind::Repeated,
                 (Some(_), None) => MeasureKind::RepeatStart,
@@ -180,89 +196,58 @@ pub fn measure_base_parser(input: &mut &str) -> ModalResult<Measure> {
                 (None, None) => MeasureKind::Normal,
             };
 
-            Measure { kind, root }
+            Measure { kind, chunks }
         })
         .parse_next(input)
 }
 
-pub fn medium_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(standard_div_parser, opt(seq!(_: "!", medium_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Medium, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
+pub fn measure_chunks_parser(input: &mut &str) -> ModalResult<Vec<MeasureChunk>> {
+    repeat(.., measure_chunk_parser).parse_next(input)
 }
 
-pub fn standard_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(half_div_parser, opt(seq!(_: ":", standard_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Normal, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn half_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(quarter_div_parser, opt(seq!(_: ".", half_div_parser)))
-        .map(|(lhs, rhs)| match rhs {
-            Some((rhs,)) => {
-                MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Half, lhs, rhs))
-            }
-            None => lhs,
-        })
-        .parse_next(input)
-}
-
-pub fn quarter_div_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(
-        alt((blank_parser, base_beat_parser)),
-        opt(seq!(_: ",", quarter_div_parser))
-    )
-    .map(|(lhs, rhs)| match rhs {
-        Some((rhs,)) => {
-            MeasureChunk::Division(MeasureDivision::new(MeasureDivisionKind::Quarter, lhs, rhs))
-        }
-        _ => lhs,
-    })
-    .parse_next(input)
-}
-
-pub fn base_beat_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
+pub fn measure_chunk_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
     seq!(
         _: space0,
         alt((
-            "-".map(|_| MeasureChunk::ProlongedNote),
-            extended_note_parser,
+            pulse_parser.map(|p| MeasureChunk::Pulse(p)),
+            separator_parser.map(|s| MeasureChunk::Separation(s)),
+            division_parser.map(|d| MeasureChunk::Division(d)),
+            "_".map(|_| MeasureChunk::Underline),
         )),
         _: space0,
     )
-    .map(|(b,)| b)
+    .map(|(value,)| value)
     .parse_next(input)
 }
 
-pub fn extended_note_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
-    seq!(
-        opt(seq!('_', _: space0)),
-        note_parser,
-        opt(seq!(_: space0, '_')),
-    )
-    .map(|(l, n, r)| match (l, r) {
-        (None, None) => MeasureChunk::Note(n),
-        (Some(_), None) => MeasureChunk::UnderlineStart(n),
-        (None, Some(_)) => MeasureChunk::UnderlineEnd(n),
-        (Some(_), Some(_)) => MeasureChunk::UnderlinedNote(n),
-    })
+pub fn division_parser(input: &mut &str) -> ModalResult<BeatDivision> {
+    alt((
+        ".".map(|_| BeatDivision::Half),
+        ",".map(|_| BeatDivision::Quarter),
+    ))
     .parse_next(input)
 }
 
-pub fn blank_parser(input: &mut &str) -> ModalResult<MeasureChunk> {
+pub fn separator_parser(input: &mut &str) -> ModalResult<BeatSeparation> {
+    alt((
+        ":".map(|_| BeatSeparation::Normal),
+        "!".map(|_| BeatSeparation::Medium),
+    ))
+    .parse_next(input)
+}
+
+pub fn pulse_parser(input: &mut &str) -> ModalResult<Pulse> {
+    alt((
+        empty_note_parser,
+        note_parser.map(|n| Pulse::Note(n)),
+        "-".map(|_| Pulse::ProlongedNote),
+    ))
+    .parse_next(input)
+}
+
+pub fn empty_note_parser(input: &mut &str) -> ModalResult<Pulse> {
     seq!(space1, peek(alt((".", ":", "!", "|"))))
-        .map(|_| MeasureChunk::EmptyNote)
+        .map(|_| Pulse::EmptyNote)
         .parse_next(input)
 }
 

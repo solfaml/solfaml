@@ -22,47 +22,55 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: R,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: M,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: F,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -70,47 +78,55 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: R,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: M,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: F,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -118,47 +134,55 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: R,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: M,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: F,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -166,47 +190,55 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: R,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: M,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: F,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -249,38 +281,47 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: S,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: L,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: T,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
@@ -289,9 +330,8 @@ Ok(
                                                 ),
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -299,38 +339,47 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: S,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: L,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: T,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: D,
                                                 variant: Base,
@@ -339,9 +388,8 @@ Ok(
                                                 ),
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -349,41 +397,49 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: S,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: L,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: T,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: ProlongedNote,
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        ProlongedNote,
+                                    ),
+                                ],
                             },
                         ],
                     },
@@ -391,41 +447,49 @@ Ok(
                         measures: [
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: S,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: Note(
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: L,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                ],
                             },
                             Measure {
                                 kind: Normal,
-                                root: Division(
-                                    MeasureDivision {
-                                        lhs: Note(
+                                chunks: [
+                                    Pulse(
+                                        Note(
                                             Note {
                                                 base: T,
                                                 variant: Base,
                                                 octave: Base,
                                             },
                                         ),
-                                        rhs: ProlongedNote,
-                                        kind: Normal,
-                                    },
-                                ),
+                                    ),
+                                    Separation(
+                                        Normal,
+                                    ),
+                                    Pulse(
+                                        ProlongedNote,
+                                    ),
+                                ],
                             },
                         ],
                     },

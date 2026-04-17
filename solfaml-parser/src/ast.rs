@@ -227,29 +227,33 @@ impl std::fmt::Display for Note {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-pub enum MeasureDivisionKind {
-    Medium,
-    Normal,
-    Half,
-    Quarter,
+pub enum MeasureChunk {
+    Underline,
+    Pulse(Pulse),
+    Division(BeatDivision),
+    Separation(BeatSeparation),
 }
 
 #[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
-pub struct MeasureDivision {
-    pub lhs: Box<MeasureChunk>,
-    pub rhs: Box<MeasureChunk>,
-    pub kind: MeasureDivisionKind,
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum Pulse {
+    EmptyNote,
+    ProlongedNote,
+    Note(Note),
 }
 
-impl MeasureDivision {
-    pub fn new(kind: MeasureDivisionKind, lhs: MeasureChunk, rhs: MeasureChunk) -> Self {
-        MeasureDivision {
-            lhs: lhs.into(),
-            rhs: rhs.into(),
-            kind,
-        }
-    }
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum BeatSeparation {
+    Normal,
+    Medium,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
+pub enum BeatDivision {
+    Half,
+    Quarter,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -262,7 +266,7 @@ pub struct StaffLine {
 #[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi))]
 pub struct Measure {
     pub kind: MeasureKind,
-    pub root: MeasureChunk,
+    pub chunks: Vec<MeasureChunk>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
@@ -272,18 +276,6 @@ pub enum MeasureKind {
     Repeated,
     RepeatStart,
     RepeatEnd,
-}
-
-#[derive(Debug, PartialEq, Serialize)]
-#[cfg_attr(feature = "wasm", derive(Tsify), tsify(into_wasm_abi, namespace))]
-pub enum MeasureChunk {
-    EmptyNote,
-    ProlongedNote,
-    Note(Note),
-    Division(MeasureDivision),
-    UnderlineStart(Note),
-    UnderlineEnd(Note),
-    UnderlinedNote(Note),
 }
 
 #[derive(Debug, PartialEq, Serialize)]
